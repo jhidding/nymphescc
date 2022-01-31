@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+<!-- adapted from the Haskell syntax file by Nicolas Wu <zenzike@gmail.com>
+     Still needs some work
+  -->
+<language name="Dhall" version="4" kateversion="3.4" section="Sources" extensions="*.dhall" mimetype="text/x-dhall" author="Johan Hidding (johannes.hidding@gmail.com)" license="LGPL" indenter="haskell" style="dhall" mimetype="application/x-dhall;text/x-dhall">
+  <highlighting>
+  <list name="keywords">
+    <item> let </item>
+    <item> in </item>
+    <item> merge </item>
+    <item> toMap </item>
+    <item> using </item>
+    <item> as </item>
+    <item> assert </item>
+    <item> if </item>
+    <item> then </item>
+    <item> else </item>
+  </list>
+  <list name="prelude function">
+    <item> </item>
+  </list>
+  <list name="prelude type">
+    <item> Bool </item>
+    <item> Type </item>
+    <item> Natural </item>
+    <item> Integer </item>
+    <item> Double </item>
+    <item> Text </item>
+    <item> List </item>
+    <item> Optional </item>
+    <item> Integer </item>
+  </list>
+  <list name="prelude data">
+    <item> False </item>
+    <item> True </item>
+    <item> Some </item>
+    <item> None </item>
+  </list>
+  <contexts>
+    <context attribute="Normal" lineEndContext="#stay" name="code">
+      <RegExpr attribute="Pragma"  context="#stay" String="\{-#.*#-\}"/>
+      <StringDetect attribute="Comment" context="#stay" String="{--}"/>
+      <RegExpr attribute="Comment" context="comments" String="\{-[^#]?" />
+      <RegExpr attribute="Comment" context="comment"  String="--[\-]*([^!#\$%&amp;\*\+\./&lt;=&gt;\?@&#92;\^\|\-~:]|$)" />
+
+      <keyword attribute="Keyword"          context="#stay" String="keywords" />
+      <keyword attribute="Function Prelude" context="#stay" String="prelude function" />
+      <keyword attribute="Type Prelude"     context="#stay" String="prelude type" />
+      <keyword attribute="Data Prelude"     context="#stay" String="prelude data" />
+      <keyword attribute="Class Prelude"    context="#stay" String="prelude class" />
+
+      <RegExpr attribute="Special"          context="#stay" String="(::|=&gt;|\-&gt;|&lt;\-)" />
+      <AnyChar attribute="Special"          context="#stay" String="∷⇒→←∀∃" />
+      <RegExpr attribute="Signature"        context="#stay" String="\s*[a-z_][a-zA-Z0-9_']*\s*(?=::([^\-!#\$%&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:]|$))" />
+      <RegExpr attribute="Signature"        context="#stay" String="\s*(\([\-!#\$%&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:]*\))*\s*(?=::[^\-!#\$%&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:])" />
+      <RegExpr attribute="Function"         context="#stay" String="([A-Z][a-zA-Z0-9_']*\.)*[a-z_][a-zA-Z0-9_']*" />
+      <RegExpr attribute="Operator"         context="#stay" String="([A-Z][a-zA-Z0-0_']*\.)*[\-!#\$%&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:]+" />
+      <RegExpr attribute="Type"             context="#stay" String="([A-Z][a-zA-Z0-9_']*\.)*[A-Z][a-zA-Z0-9_']*" />
+
+      <RegExpr    attribute="Float"   context="#stay" String ="\d+\.\d+([Ee][+-]?\d+)?|\d+[Ee][+-]?\d+"/>
+      <RegExpr    attribute="Octal"   context="#stay" String="0[Oo][0-7]+"/>
+      <RegExpr    attribute="Hex"     context="#stay" String="0[Xx][0-9A-Fa-f]+"/>
+      <Int        attribute="Decimal" context="#stay" />
+      <DetectChar attribute="String"  context="string" char="&quot;" />
+      <Detect2Chars attribute="String"  context="multilinestring" char ="'" char1="'" />
+
+      <Detect2Chars attribute="EnumFromTo" context="#stay" char ="." char1="." />
+      <AnyChar      attribute="EnumFromTo" context="#stay" String="‥" />
+
+      <RegExpr attribute="Normal" context="QuasiQuote" String="\[[a-zA-Z_'](\w|[_'])*\|" />
+    </context>
+    <context attribute="Normal" lineEndContext="#stay" name="QuasiQuote">
+      <Detect2Chars attribute="Normal" context="#pop" char="|" char1="]"/>
+    </context>
+    <context attribute="Comment" lineEndContext="#pop" name="comment">
+      <IncludeRules context="Haddock" />
+    </context>
+    <context attribute="Comment" lineEndContext="#stay" name="comments">
+      <Detect2Chars attribute="Comment" context="comment" char="{" char1="-" />
+      <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" />
+      <IncludeRules context="Haddock" />
+    </context>
+    <context attribute="String" lineEndContext="#stay" name="string">
+      <RegExpr attribute="String" context="#stay" String="\\." />
+      <DetectChar attribute="String" context="#pop" char="&quot;" />
+    </context>
+    <context attribute="String" lineEndContext="#stay" name="multilinestring">
+      <Detect2Chars attribute="String"  context="#pop" char ="'" char1="'" />
+    </context>
+  </contexts>
+  <itemDatas>
+    <itemData name="Normal"           defStyleNum="dsNormal"   spellChecking="false" />
+    <itemData name="Comment"          defStyleNum="dsComment" />
+    <itemData name="Pragma"           defStyleNum="dsOthers"   spellChecking="false" />
+
+    <itemData name="Keyword"          defStyleNum="dsKeyword"  spellChecking="false" />
+    <itemData name="Type Prelude"     defStyleNum="dsDataType" spellChecking="false" />
+    <itemData name="Function Prelude" defStyleNum="dsNormal" spellChecking="false" />
+    <itemData name="Data Prelude"     defStyleNum="dsDataType"  spellChecking="false" />
+    <itemData name="Class Prelude"    defStyleNum="dsDataType"  spellChecking="false" />
+
+    <itemData name="Signature"        defStyleNum="dsOthers"  spellChecking="false" />
+    <itemData name="Function"         defStyleNum="dsNormal"   spellChecking="false" />
+    <itemData name="Operator"         defStyleNum="dsFunction" spellChecking="false" />
+    <itemData name="Type"             defStyleNum="dsDataType" spellChecking="false" />
+    <itemData name="Special"          defStyleNum="dsOthers"  spellChecking="false" />
+
+    <itemData name="Octal"            defStyleNum="dsBaseN"    spellChecking="false" />
+    <itemData name="Hex"              defStyleNum="dsBaseN"    spellChecking="false" />
+    <itemData name="Decimal"          defStyleNum="dsDecVal"   spellChecking="false" />
+    <itemData name="Float"            defStyleNum="dsFloat"    spellChecking="false" />
+    <itemData name="Char"             defStyleNum="dsChar"     spellChecking="false" />
+    <itemData name="String"           defStyleNum="dsString" />
+
+    <itemData name="Function Infix"   defStyleNum="dsOthers"   spellChecking="false" />
+    <itemData name="EnumFromTo"       defStyleNum="dsOthers"   spellChecking="false" />
+
+    <itemData name="C Preprocessor"   defStyleNum="dsOthers"   spellChecking="false" />
+    <itemData name="C Preprocessor Keyword" defStyleNum="dsOthers"   spellChecking="false" />
+
+    <itemData name="Haddock Hyperlink" defStyleNum="dsComment" spellChecking="false" underline="true" />
+    <itemData name="Haddock Module" defStyleNum="dsComment" spellChecking="false" underline="true" />
+    <itemData name="Haddock Emphasis" defStyleNum="dsComment" italic="true"/>
+    <itemData name="Haddock Bold" defStyleNum="dsComment" bold="true"/>
+
+    <itemData name="C2HS Directive"   defStyleNum="dsString"   spellChecking="false" />
+  </itemDatas>
+  </highlighting>
+  <general>
+    <folding indentationsensitive="1"/>
+    <comments>
+      <comment name="singleLine" start="--" />
+      <comment name="multiLine" start="{-" end="-}" />
+    </comments>
+    <keywords casesensitive="1" />
+</general>
+</language>
