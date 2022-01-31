@@ -9,6 +9,7 @@ python = "^3.10"
 wxPython = "^4.1.1"
 mido = "^1.2.10"
 pyalsaaudio = {version = "^0.9.0", platform = "linux"}
+dhall = "^0.1.12"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0.0rc1"

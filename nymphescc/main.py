@@ -3,7 +3,7 @@
 from __future__ import annotations
 import wx
 
-from .setting import Settings, SettingsGroup, Setting, read_settings
+from .messages import Setting, Group, read_settings
 
 class SettingSlider(wx.BoxSizer):
     def __init__(self, parent: Controller, setting: Setting):
@@ -14,8 +14,8 @@ class SettingSlider(wx.BoxSizer):
             style=wx.ALIGN_CENTRE_HORIZONTAL)
         slider = wx.Slider(
             parent,
-            minValue=setting.bounds[0],
-            maxValue=setting.bounds[1],
+            minValue=setting.bounds.lower,
+            maxValue=setting.bounds.upper,
             value=0,
             style=wx.SL_VERTICAL | wx.SL_VALUE_LABEL | wx.SL_INVERSE,
             name=setting.name,
@@ -24,18 +24,18 @@ class SettingSlider(wx.BoxSizer):
         self.Add(slider, wx.EXPAND)
 
 class SettingsGroup(wx.StaticBoxSizer):
-    def __init__(self, parent: wx.Window, name: str, group: SettingsGroup):
+    def __init__(self, parent: wx.Window, name: str, group: Group):
         wx.StaticBoxSizer.__init__(self, wx.HORIZONTAL, parent, name)
-        for setting in group.values():
+        for setting in group.content:
             slider = SettingSlider(parent, setting)
             self.Add(slider, wx.EXPAND)
 
 class Controller(wx.Frame):
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: dict[str, Group]):
         wx.Frame.__init__(self, None, title="NymphesCC", size=(800,600))
         self.CreateStatusBar()
         sizer = wx.BoxSizer()
-        groups = ["Oscillator Control", "Filter Control", "Envelope Control"]
+        groups = ["oscillator", "filter", "envelope.filter", "envelope.amplitude"]
         for select in groups:
             sizer.AddSpacer(5)
             sizer.Add(SettingsGroup(self, select, settings[select]))

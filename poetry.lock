@@ -43,6 +43,14 @@ tomli = {version = "*", optional = true, markers = "extra == \"toml\""}
 toml = ["tomli"]
 
 [[package]]
+name = "dhall"
+version = "0.1.12"
+description = "Python bindings for dhall, a functional configuration language"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "filelock"
 version = "3.4.2"
 description = "A platform independent file lock."
@@ -255,7 +263,7 @@ six = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "a64e27b4941e1d0c35b65edd8adddbfe831ef01c958d461a24706fe1b2bfae47"
+content-hash = "2caec5fb39b82f7c5a3d230b46ce3a3a27a9b9584358f9cad77e7595dc3f6fb9"
 
 [metadata.files]
 atomicwrites = [
@@ -315,6 +323,23 @@ coverage = [
     {file = "coverage-6.3-cp39-cp39-win_amd64.whl", hash = "sha256:e67ccd53da5958ea1ec833a160b96357f90859c220a00150de011b787c27b98d"},
     {file = "coverage-6.3-pp36.pp37.pp38-none-any.whl", hash = "sha256:27ac7cb84538e278e07569ceaaa6f807a029dc194b1c819a9820b9bb5dbf63ab"},
     {file = "coverage-6.3.tar.gz", hash = "sha256:987a84ff98a309994ca77ed3cc4b92424f824278e48e4bf7d1bb79a63cfe2099"},
+]
+dhall = [
+    {file = "dhall-0.1.12-cp310-cp310-macosx_10_7_x86_64.whl", hash = "sha256:f3ef7d76bc7668d1d9af9c244129ca43672b2f467167640a47c6979e052ba473"},
+    {file = "dhall-0.1.12-cp310-cp310-manylinux_2_24_x86_64.whl", hash = "sha256:45e67a7d77644a149bb022f306a75bdd8ca88b72c8490e8b907e8d8f51ec14ec"},
+    {file = "dhall-0.1.12-cp310-none-win_amd64.whl", hash = "sha256:8b8b7bf67ef6b5047c656947ce0b4e54ed43c0f5f4428d8d2ae37e1ff3b8897a"},
+    {file = "dhall-0.1.12-cp36-cp36m-macosx_10_7_x86_64.whl", hash = "sha256:d7a6d6ca015911462acbee108e56a9040dae0487f7ad11dc33e6501b9259bb62"},
+    {file = "dhall-0.1.12-cp36-cp36m-manylinux_2_24_x86_64.whl", hash = "sha256:3e314705aa8bd82ee6e2f16ab14fd2b5eb6ffb7fb2c4079f3cb9de2bd35421a5"},
+    {file = "dhall-0.1.12-cp36-none-win_amd64.whl", hash = "sha256:18724e6cd25d57f381384eb388ebeb421bbaf4c2e64ae746988ce84166472ca0"},
+    {file = "dhall-0.1.12-cp37-cp37m-macosx_10_7_x86_64.whl", hash = "sha256:27c0562130e47685f6f18591fe7af09595b1913ae6260091f8210d0e09266ea9"},
+    {file = "dhall-0.1.12-cp37-cp37m-manylinux_2_24_x86_64.whl", hash = "sha256:b1c881a48ca86b7c299a2eca8c8d5704a1132ed4e41a2c7768f7621702a6254a"},
+    {file = "dhall-0.1.12-cp37-none-win_amd64.whl", hash = "sha256:84e08a42b3457a9d95244c5f5b744cb2f719f7e1a97e429f8f527206a12b3c60"},
+    {file = "dhall-0.1.12-cp38-cp38-macosx_10_7_x86_64.whl", hash = "sha256:1fa6831f2d103908d65cc28722a7967726b9ab404aa81f259179a61dc849beaf"},
+    {file = "dhall-0.1.12-cp38-cp38-manylinux_2_24_x86_64.whl", hash = "sha256:6ed3a670eacbe9d7db546bbb6cdd40f717acf6994df663243121d8621a09c6dc"},
+    {file = "dhall-0.1.12-cp38-none-win_amd64.whl", hash = "sha256:105bcd86e2d5da1bb3c7411ba3b29270bb320b35673f5c5ced7f06d715b34b6d"},
+    {file = "dhall-0.1.12-cp39-cp39-macosx_10_7_x86_64.whl", hash = "sha256:b2b4a411d8737da452f6feb4392990974679b93d858ecf4b402a45e7069aaa32"},
+    {file = "dhall-0.1.12-cp39-cp39-manylinux_2_24_x86_64.whl", hash = "sha256:6007e7f31b3f2befded2f810d314531d0c12a0b96cdcd6f678e0bf1109410062"},
+    {file = "dhall-0.1.12-cp39-none-win_amd64.whl", hash = "sha256:3e9c851299bd0cd0b14b4c42933cd5b10dd2a75bb63c5cfbc14f18166d886e74"},
 ]
 filelock = [
     {file = "filelock-3.4.2-py3-none-any.whl", hash = "sha256:cf0fc6a2f8d26bd900f19bf33915ca70ba4dd8c56903eeb14e1e7a2fd7590146"},

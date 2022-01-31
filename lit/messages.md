@@ -2,18 +2,17 @@
 From the Nymphes manual we get a table with MIDI CC messages.
 
 ``` {.dhall #schema}
-let Range = { lower : Natural, upper : Natural }
+let Range : Type = { lower : Natural, upper : Natural }
 let range = \(lower : Natural) -> \(upper : Natural) ->
     { lower = lower, upper = upper }
 
-let Tic = { value : Natural, label : Text }
+let Tic : Type = { value : Natural, label : Text }
 let tic = \(value : Natural) -> \(label : Text) ->
     { value = value, label = label }
 
-let Node = < Group : Group | Setting : Setting >
-let Group = { name : Text, contents : List Node }
 let Setting =
     { Type    = { name : Text
+                , long : Text
                 , cc : Natural
                 , bounds : Range
                 , description : Optional Text
@@ -21,7 +20,7 @@ let Setting =
                 , mod : Optional Natural
                 , flags : Optional (List Text)
                 , tics : Optional (List Tic) }
-    , default = { bounds = range(0, 127)
+    , default = { bounds = range 0 127
                 , description = None Text
                 , labels = None (List Text)
                 , mod = None Natural
@@ -29,10 +28,15 @@ let Setting =
                 , tics = None (List Tic) } }
 ```
 
+``` {.make target=messages.dhall dir=nymphescc}
+nymphescc/messages.dhall: lit/messages.md .entangled/scripts/message-table.lua
+    pandoc -t plain -f commonmark_x lit/messages.md --lua-filter .entangled/scripts/message-table.lua | dhall format --unicode > $@
+```
+
 ## Oscillator Control {.group name=oscillator}
 ### Wave form {.setting name=wave cc=12 mod=51}
 ``` {.values}
-{ tics = Some [tic(0, "⩘"), tic(63, "⎍"), tic(127, "⋀")] }
+{ tics = Some [tic 0 "⩘", tic 63 "⎍", tic 127 "⋀"] }
 ```
 Controls the shape of the generated wave, going from sawtooth through square, to triangle waves.
 
@@ -69,13 +73,13 @@ Choose from different predefined chords (see Chords tab).
 ## Filter control {.group name=filter}
 ### Hipass Cutoff {.setting name=hpf cc=3 mod=65}
 ``` {.values}
-{ tics = Some [tic(0, "33 hZ"), tic(127, "17 khZ")] }
+{ tics = Some [tic 0 "33 hZ", tic 127 "17 khZ"] }
 ```
 Sets the cutoff frequency of the hipass filter. Hipass is piped after lopass, creating a bandpass.
 
 ### Lopass Cutoff {.setting name=cut cc=4 mod=61}
 ``` {.values}
-{ tics = Some [tic(0, "33 hZ"), tic(127, "17 khZ")] }
+{ tics = Some [tic 0 "33 hZ", tic 127 "17 khZ"] }
 ```
 Sets the cutoff frequency of the lopass filter.
 
@@ -116,11 +120,11 @@ The envelopes follow classic Attack/Decay/Sustain/Release pattern.
 ### LFO 1 {.group name=lfo-1}
 #### Type {.setting name=type cc=35}
 ``` {.values}
-{ bounds = range(0, 3), labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ] }
+{ bounds = range 0 3, labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ] }
 ```
 #### Sync {.setting name=sync cc=36}
 ``` {.values}
-{ bounds = range(0, 1), labels = Some [ "FREE", "KEY SYNC" ] }
+{ bounds = range 0 1, labels = Some [ "FREE", "KEY SYNC" ] }
 ```
 #### Rate {.setting name=rate cc=31 mod=77}
 #### Wave {.setting name=wave cc=32 mod=78}
@@ -129,11 +133,11 @@ The envelopes follow classic Attack/Decay/Sustain/Release pattern.
 ### LFO 2 {.group name=lfo-2}
 #### Type {.setting name=type cc=41}
 ``` {.values}
-{ bounds = range(0, 3), labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ] }
+{ bounds = range 0 3, labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ] }
 ```
 #### Sync {.setting name=sync cc=42}
 ``` {.values}
-{ bounds = range(0, 1), labels = Some [ "FREE", "KEY SYNC" ] }
+{ bounds = range 0 1, labels = Some [ "FREE", "KEY SYNC" ] }
 ```
 #### Rate {.setting name=rate cc=37 mod=81}
 #### Wave {.setting name=wave cc=38 mod=82}
@@ -149,7 +153,7 @@ The envelopes follow classic Attack/Decay/Sustain/Release pattern.
 ## Modulators {.group name=modulators}
 ### Selector {.setting name=selector cc=5}
 ``` {.values}
-{ bounds = range(0, 3), labels = Some ["LFO 2", "Mod Wheel", "Velocity", "Aftertouch"] }
+{ bounds = range 0 3, labels = Some ["LFO 2", "Mod Wheel", "Velocity", "Aftertouch"] }
 ```
 
 ## Misc {.group name=misc}
@@ -158,9 +162,9 @@ Undocumented.
 
 ### Play mode {.setting name=mode cc=30}
 ``` {.values}
-{ bounds = range(0, 5), labels = Some ["POLY", "UNI A", "UNI B", "TRI", "DUO", "MONO"] }
+{ bounds = range 0 5, labels = Some ["POLY", "UNI A", "UNI B", "TRI", "DUO", "MONO"] }
 ```
 ### Legato {.setting name=legato cc=68}
 ``` {.values}
-{ bounds = range(0, 1) }
+{ bounds = range 0 1 }
 ```

@@ -15,13 +15,14 @@ function CodeBlock(block)
             caption = ""
         end
         outfile = block.attributes["target"]
+        target_dir = block.attributes["dir"] or "docs"
         system.with_temporary_directory("run-make", function (tmpdir)
-            local src = make_preamble:format("docs", outfile) .. rawsrc
+            local src = make_preamble:format(target_dir, outfile) .. rawsrc
             local f = io.open(tmpdir .. "/Makefile", "w")
             f:write(src)
             f:close()
-            os.execute("mkdir -p docs/$(dirname " .. outfile ..")")
-            os.execute("make -f " .. tmpdir .. "/Makefile " .. "docs/" .. outfile)
+            os.execute("mkdir -p " .. target_dir .. "/$(dirname " .. outfile ..")")
+            os.execute("make -f " .. tmpdir .. "/Makefile " .. target_dir .. "/" .. outfile)
         end)
         return pandoc.Para({pandoc.Image({pandoc.Str(caption)}, outfile, caption, {class = "figure"})})
     end

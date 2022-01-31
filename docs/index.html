@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Johan Hidding" />
+  <title>NymphesCC</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+      }
+    pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+    div.sourceCode
+      { color: #cccccc; background-color: #332244; }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ffcfaf; } /* Alert */
+    code span.an { color: #7f9f7f; font-weight: bold; } /* Annotation */
+    code span.at { } /* Attribute */
+    code span.bn { color: #dca3a3; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #f0dfaf; } /* ControlFlow */
+    code span.ch { color: #dca3a3; } /* Char */
+    code span.cn { color: #dca3a3; font-weight: bold; } /* Constant */
+    code span.co { color: #7f9f7f; } /* Comment */
+    code span.cv { color: #7f9f7f; font-weight: bold; } /* CommentVar */
+    code span.do { color: #7f9f7f; } /* Documentation */
+    code span.dt { color: #dfdfbf; } /* DataType */
+    code span.dv { color: #dcdccc; } /* DecVal */
+    code span.er { color: #c3bf9f; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #c0bed1; } /* Float */
+    code span.fu { color: #efef8f; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #7f9f7f; font-weight: bold; } /* Information */
+    code span.kw { color: #f0dfaf; } /* Keyword */
+    code span.op { color: #f0efd0; } /* Operator */
+    code span.ot { color: #efef8f; } /* Other */
+    code span.pp { color: #ffcfaf; font-weight: bold; } /* Preprocessor */
+    code span.sc { color: #dca3a3; } /* SpecialChar */
+    code span.ss { color: #cc9393; } /* SpecialString */
+    code span.st { color: #cc9393; } /* String */
+    code span.va { } /* Variable */
+    code span.vs { color: #cc9393; } /* VerbatimString */
+    code span.wa { color: #7f9f7f; font-weight: bold; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="theme.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">NymphesCC</h1>
+<p class="subtitle">MIDI controller using WxPython</p>
+<p class="author">Johan Hidding</p>
+</header>
+<div class="row">
+        <div class="col-6 col-s-9" id="main">
+<div class="named-code-block">
+<p>file:nymphescc/__init__.py</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>__version__ <span class="op">=</span> <span class="st">&quot;0.1.0&quot;</span></span></code></pre></div>
+</div>
+<p>From the Nymphes manual we get a table with MIDI CC messages.</p>
+<section id="the-gui" class="level1">
+<h1>The GUI</h1>
+<div class="named-code-block">
+<p>file:nymphescc/messages.py</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> importlib <span class="im">import</span> resources</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> dhall</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, is_dataclass</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> typing</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Optional, Union</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> types</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ConfigError(<span class="pp">Exception</span>):</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">pass</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ConfigValueError(ConfigError):</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    setting: Setting</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    what: <span class="bu">str</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ConfigParserError(ConfigError):</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    input_str: <span class="bu">str</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    what: <span class="bu">str</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Bounds:</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    lower: <span class="bu">int</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    upper: <span class="bu">int</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Tic:</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    value: <span class="bu">int</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    label: <span class="bu">str</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Setting:</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Setting class.</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co">    Attributes:</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co">        name: name of the setting.</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="co">        long: human readable name.</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co">        cc: MIDI CC code</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co">        mod: MIDI CC code of modulator setting</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="co">        bounds: lower (inclusive) and upper (exclusive) bounds</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="co">        tics: list of known values with description</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="co">        labels: list of aliases for settings, should have same length</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="co">            as bounds interval.</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="co">        flags: list of related settings.</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    <span class="bu">long</span>: <span class="bu">str</span></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>    cc: <span class="bu">int</span></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>    bounds: Bounds</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>    description: Optional[<span class="bu">str</span>]</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>    mod: Optional[<span class="bu">int</span>]</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>    tics: Optional[<span class="bu">list</span>[Tic]]</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>    labels: Optional[<span class="bu">list</span>[<span class="bu">str</span>]]</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> validate(<span class="va">self</span>):</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> (<span class="va">self</span>.bounds.lower <span class="op">&lt;</span> <span class="va">self</span>.bounds.upper):</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> ConfigValueError(<span class="va">self</span>, <span class="st">&quot;illegal bounds&quot;</span>)</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="va">self</span>.enum <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="op">\</span></span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>        <span class="kw">and</span> <span class="bu">len</span>(<span class="va">self</span>.labels) <span class="op">!=</span> (<span class="va">self</span>.bounds.upper <span class="op">-</span> <span class="va">self</span>.bounds.lower <span class="op">+</span> <span class="dv">1</span>):</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> ConfigValueError(<span class="va">self</span>, <span class="st">&quot;wrong number of labels&quot;</span>)</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Group:</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>    <span class="bu">long</span>: <span class="bu">str</span></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>    description: Optional[<span class="bu">str</span>]</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    content: <span class="bu">list</span>[Setting]</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> isgeneric(annot):</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">hasattr</span>(annot, <span class="st">&quot;__origin__&quot;</span>) <span class="op">\</span></span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>        <span class="kw">and</span> <span class="bu">hasattr</span>(annot, <span class="st">&quot;__args__&quot;</span>)</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> construct(annot, json):</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Construct an object from a given type from a JSON stream.</span></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a><span class="co">    The `annot` type should be one of: str, int, list[T], Optional[T],</span></span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a><span class="co">    or a dataclass, and the JSON data should match exactly the given</span></span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a><span class="co">    definitions in the dataclass hierarchy.</span></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> annot <span class="kw">is</span> <span class="bu">str</span>:</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">str</span>)</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> json</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> annot <span class="kw">is</span> <span class="bu">int</span>:</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">int</span>)</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> json</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> isgeneric(annot) <span class="kw">and</span> typing.get_origin(annot) <span class="kw">is</span> <span class="bu">list</span>:</span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">list</span>)</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> [construct(typing.get_args(annot)[<span class="dv">0</span>], item) <span class="cf">for</span> item <span class="kw">in</span> json]</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> isgeneric(annot) <span class="kw">and</span> typing.get_origin(annot) <span class="kw">is</span> Union <span class="op">\</span></span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>        <span class="kw">and</span> typing.get_args(annot)[<span class="dv">1</span>] <span class="kw">is</span> types.NoneType:</span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> json <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> construct(typing.get_args(annot)[<span class="dv">0</span>], json)</span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> is_dataclass(annot):</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">dict</span>)</span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>        arg_annot <span class="op">=</span> typing.get_type_hints(annot)</span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">all</span>(k <span class="kw">in</span> json <span class="cf">for</span> k <span class="kw">in</span> arg_annot)</span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>        args <span class="op">=</span> { k: construct(v, json[k])</span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>                 <span class="cf">for</span> k, v <span class="kw">in</span> arg_annot.items() }</span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> annot(<span class="op">**</span>args)</span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> read_settings():</span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> resources.open_text(__package__, <span class="st">&quot;messages.dhall&quot;</span>) <span class="im">as</span> inp:</span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>        raw_data <span class="op">=</span> dhall.load(inp)</span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>    group_lst <span class="op">=</span> construct(<span class="bu">list</span>[Group], raw_data)</span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { grp.name: grp <span class="cf">for</span> grp <span class="kw">in</span> group_lst }</span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(read_settings())</span></code></pre></div>
+</div>
+<div class="named-code-block">
+<p>file:nymphescc/main.py</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> wx</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .messages <span class="im">import</span> Setting, Group, read_settings</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingSlider(wx.BoxSizer):</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: Controller, setting: Setting):</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        wx.BoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.VERTICAL)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> wx.StaticText(</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>            parent,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span>setting.name,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.ALIGN_CENTRE_HORIZONTAL)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        slider <span class="op">=</span> wx.Slider(</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>            parent,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>            minValue<span class="op">=</span>setting.bounds.lower,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>            maxValue<span class="op">=</span>setting.bounds.upper,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>            value<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.SL_VERTICAL <span class="op">|</span> wx.SL_VALUE_LABEL <span class="op">|</span> wx.SL_INVERSE,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span>setting.name,</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>            size<span class="op">=</span>wx.Size(<span class="op">-</span><span class="dv">1</span>, <span class="dv">300</span>))</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(label)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingsGroup(wx.StaticBoxSizer):</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: wx.Window, name: <span class="bu">str</span>, group: Group):</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        wx.StaticBoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.HORIZONTAL, parent, name)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> setting <span class="kw">in</span> group.content:</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>            slider <span class="op">=</span> SettingSlider(parent, setting)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Controller(wx.Frame):</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, settings: <span class="bu">dict</span>[<span class="bu">str</span>, Group]):</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>        wx.Frame.<span class="fu">__init__</span>(<span class="va">self</span>, <span class="va">None</span>, title<span class="op">=</span><span class="st">&quot;NymphesCC&quot;</span>, size<span class="op">=</span>(<span class="dv">800</span>,<span class="dv">600</span>))</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.CreateStatusBar()</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>        sizer <span class="op">=</span> wx.BoxSizer()</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        groups <span class="op">=</span> [<span class="st">&quot;oscillator&quot;</span>, <span class="st">&quot;filter&quot;</span>, <span class="st">&quot;envelope.filter&quot;</span>, <span class="st">&quot;envelope.amplitude&quot;</span>]</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> select <span class="kw">in</span> groups:</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>            sizer.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>            sizer.Add(SettingsGroup(<span class="va">self</span>, select, settings[select]))</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>            sizer.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.SetSizer(sizer) </span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Show(<span class="va">True</span>)</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>    app <span class="op">=</span> wx.App(<span class="va">False</span>)</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> read_settings()</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>    frame <span class="op">=</span> Controller(settings)</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>    app.MainLoop()</span></code></pre></div>
+</div>
+</section>
+<section id="settings" class="level1 messages">
+<h1 class="messages">Settings</h1>
+<p>From the Nymphes manual we get a table with MIDI CC messages.</p>
+<div class="named-code-block">
+<p>«schema»</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode dhall"><code class="sourceCode dhall"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Range</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { lower <span class="fu">:</span> <span class="dt">Natural</span>, upper <span class="fu">:</span> <span class="dt">Natural</span> }</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> range <span class="fu">=</span> \(lower <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(upper <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    { lower <span class="fu">=</span> lower, upper <span class="fu">=</span> upper }</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Tic</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { value <span class="fu">:</span> <span class="dt">Natural</span>, label <span class="fu">:</span> <span class="dt">Text</span> }</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> tic <span class="fu">=</span> \(value <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(label <span class="fu">:</span> <span class="dt">Text</span>) <span class="ot">-&gt;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    { value <span class="fu">=</span> value, label <span class="fu">=</span> label }</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Setting</span> <span class="fu">=</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">Type</span>    <span class="fu">=</span> { name <span class="fu">:</span> <span class="dt">Text</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                , long <span class="fu">:</span> <span class="dt">Text</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                , cc <span class="fu">:</span> <span class="dt">Natural</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                , bounds <span class="fu">:</span> <span class="dt">Range</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Text</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Natural</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Tic</span>) }</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    , default <span class="fu">=</span> { bounds <span class="fu">=</span> range <span class="dv">0</span> <span class="dv">127</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Text</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Natural</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Tic</span>) } }</span></code></pre></div>
+</div>
+<p><img src="messages.dhall" class="figure" alt="" /></p>
+<section id="oscillator-control" class="level2 group" name="oscillator">
+<h2 class="group" name="oscillator">Oscillator Control</h2>
+<section id="wave-form" class="level3 setting" name="wave" data-cc="12"
+data-mod="51">
+<h3 class="setting" name="wave" data-cc="12" data-mod="51">Wave
+form</h3>
+<pre class="values"><code>{ tics = Some [tic 0 &quot;⩘&quot;, tic 63 &quot;⎍&quot;, tic 127 &quot;⋀&quot;] }</code></pre>
+<p>Controls the shape of the generated wave, going from sawtooth through
+square, to triangle waves.</p>
+</section>
+<section id="pulse-width" class="level3 setting" name="pw" data-cc="11"
+data-mod="56">
+<h3 class="setting" name="pw" data-cc="11" data-mod="56">Pulse
+width</h3>
+<p>Control the pulse width of the square wave form. This can be
+modulated using LFO 2.</p>
+</section>
+<section id="level" class="level3 setting" name="lvl" data-cc="13"
+data-mod="52">
+<h3 class="setting" name="lvl" data-cc="13" data-mod="52">Level</h3>
+<p>Sets the amplitude of the wave form.</p>
+</section>
+<section id="sub-oscillator" class="level3 setting" name="sub"
+data-cc="14" data-mod="53">
+<h3 class="setting" name="sub" data-cc="14"
+data-mod="53">Sub-oscillator</h3>
+<p>Amplitude of sub-oscillator, which produces a square wave one octave
+below the main oscillator.</p>
+</section>
+<section id="noise-level" class="level3 setting" name="noise"
+data-cc="15" data-mod="54">
+<h3 class="setting" name="noise" data-cc="15" data-mod="54">Noise
+level</h3>
+<p>Amplitude of white noise, mixed in with main oscillator and
+sub-oscillator.</p>
+</section>
+<section id="glide" class="level3 setting" name="gld" data-cc="5"
+data-mod="57">
+<h3 class="setting" name="gld" data-cc="5" data-mod="57">Glide</h3>
+<pre class="values"><code>{ flags = Some [&quot;misc.legato&quot;] }</code></pre>
+<p>Allow notes to glide (portamento). The behaviour strongly depends on
+the playing mode. Optionally, glide will respond to legato playing.</p>
+</section>
+<section id="low-frequency-oscillator" class="level3 setting" name="lfo"
+data-cc="16" data-mod="55">
+<h3 class="setting" name="lfo" data-cc="16" data-mod="55">Low frequency
+oscillator</h3>
+<p>Control the change in pitch of the main oscillator with the LFO, from
+subtle vibrato to extreme whoopy sounds.</p>
+</section>
+<section id="envelope-generator" class="level3 setting" name="ev"
+data-cc="17" data-mod="60">
+<h3 class="setting" name="ev" data-cc="17" data-mod="60">Envelope
+Generator</h3>
+<p>Control how much the filter envelope modulates the pitch of the
+oscillator. Envelopes are unipolar.</p>
+</section>
+<section id="detune" class="level3 setting" name="dtn" data-cc="18"
+data-mod="58">
+<h3 class="setting" name="dtn" data-cc="18" data-mod="58">Detune</h3>
+<p>Detune notes when in stacked modes (i.e. multiple oscillators per
+node: UNI A, UNI B, TRI, DUO).</p>
+</section>
+<section id="chord-control" class="level3 setting" name="chord"
+data-cc="19" data-mod="59">
+<h3 class="setting" name="chord" data-cc="19" data-mod="59">Chord
+control</h3>
+<p>Choose from different predefined chords (see Chords tab).</p>
+</section>
+</section>
+<section id="filter-control" class="level2 group" name="filter">
+<h2 class="group" name="filter">Filter control</h2>
+<section id="hipass-cutoff" class="level3 setting" name="hpf"
+data-cc="3" data-mod="65">
+<h3 class="setting" name="hpf" data-cc="3" data-mod="65">Hipass
+Cutoff</h3>
+<pre class="values"><code>{ tics = Some [tic 0 &quot;33 hZ&quot;, tic 127 &quot;17 khZ&quot;] }</code></pre>
+<p>Sets the cutoff frequency of the hipass filter. Hipass is piped after
+lopass, creating a bandpass.</p>
+</section>
+<section id="lopass-cutoff" class="level3 setting" name="cut"
+data-cc="4" data-mod="61">
+<h3 class="setting" name="cut" data-cc="4" data-mod="61">Lopass
+Cutoff</h3>
+<pre class="values"><code>{ tics = Some [tic 0 &quot;33 hZ&quot;, tic 127 &quot;17 khZ&quot;] }</code></pre>
+<p>Sets the cutoff frequency of the lopass filter.</p>
+</section>
+<section id="resonance" class="level3 setting" name="res" data-cc="8"
+data-mod="62">
+<h3 class="setting" name="res" data-cc="8" data-mod="62">Resonance</h3>
+<p>Sets the amount of filter resonance, i.e. how much upper frequencies
+are amplified.</p>
+</section>
+<section id="tracking" class="level3 setting" name="track" data-cc="6"
+data-mod="66">
+<h3 class="setting" name="track" data-cc="6" data-mod="66">Tracking</h3>
+<p>Sets how much the filter cutoff tracks the frequency of the main
+oscillator. At <code>127</code> the cutoff frequncy tracks the
+oscillator pitch 1:1. In combination with high resonance this can create
+beautiful overtones.</p>
+<p>If you set this to other fractions (e.g. <code>63</code> for quarter
+tones), use only noise as a sound source, and beef up resonance, you can
+play microtonal music!</p>
+</section>
+<section id="envelope-generator-1" class="level3 setting" name="eg"
+data-cc="9" data-mod="63">
+<h3 class="setting" name="eg" data-cc="9" data-mod="63">Envelope
+generator</h3>
+<p>Sets how much the filter envelope modulates the filter cutoff.</p>
+</section>
+<section id="low-frequency-oscillator-1" class="level3 setting"
+name="lfo" data-cc="10" data-mod="67">
+<h3 class="setting" name="lfo" data-cc="10" data-mod="67">Low frequency
+oscillator</h3>
+<p>Sets how much LFO 1 modulates the filter frequency cutoff.</p>
+</section>
+</section>
+<section id="envelope" class="level2 group" name="envelope">
+<h2 class="group" name="envelope">Envelope</h2>
+<p>The envelopes follow classic Attack/Decay/Sustain/Release
+pattern.</p>
+<ul>
+<li>Attack: time taken to reach maximum amplitude</li>
+<li>Decay: time taken to reach sustain level</li>
+<li>Sustain: relative amplitude of sustain level</li>
+<li>Release: time taken after release to reach 0 amp.</li>
+</ul>
+<section id="filter-cutoff-and-pitch-envelope" class="level3 group"
+name="filter">
+<h3 class="group" name="filter">Filter Cutoff and Pitch Envelope</h3>
+<section id="attack" class="level4 setting" name="a" data-cc="20"
+data-mod="69">
+<h4 class="setting" name="a" data-cc="20" data-mod="69">Attack</h4>
+</section>
+<section id="decay" class="level4 setting" name="d" data-cc="21"
+data-mod="70">
+<h4 class="setting" name="d" data-cc="21" data-mod="70">Decay</h4>
+</section>
+<section id="sustain" class="level4 setting" name="s" data-cc="22"
+data-mod="71">
+<h4 class="setting" name="s" data-cc="22" data-mod="71">Sustain</h4>
+</section>
+<section id="release" class="level4 setting" name="r" data-cc="23"
+data-mod="72">
+<h4 class="setting" name="r" data-cc="23" data-mod="72">Release</h4>
+</section>
+</section>
+<section id="amplitude-envelope" class="level3 group" name="amplitude">
+<h3 class="group" name="amplitude">Amplitude Envelope</h3>
+<section id="attack-1" class="level4 setting" name="a" data-cc="24"
+data-mod="73">
+<h4 class="setting" name="a" data-cc="24" data-mod="73">Attack</h4>
+</section>
+<section id="decay-1" class="level4 setting" name="d" data-cc="25"
+data-mod="74">
+<h4 class="setting" name="d" data-cc="25" data-mod="74">Decay</h4>
+</section>
+<section id="sustain-1" class="level4 setting" name="s" data-cc="26"
+data-mod="75">
+<h4 class="setting" name="s" data-cc="26" data-mod="75">Sustain</h4>
+</section>
+<section id="release-1" class="level4 setting" name="r" data-cc="27"
+data-mod="76">
+<h4 class="setting" name="r" data-cc="27" data-mod="76">Release</h4>
+</section>
+</section>
+</section>
+<section id="lfo-control" class="level2 group" name="lfo">
+<h2 class="group" name="lfo">LFO Control</h2>
+<section id="lfo-1" class="level3 group" name="lfo-1">
+<h3 class="group" name="lfo-1">LFO 1</h3>
+<section id="type" class="level4 setting" name="type" data-cc="35">
+<h4 class="setting" name="type" data-cc="35">Type</h4>
+<pre class="values"><code>{ bounds = range 0 3, labels = Some [ &quot;BPM&quot;, &quot;LOW&quot;, &quot;HIGH&quot;, &quot;TRACK&quot; ] }</code></pre>
+</section>
+<section id="sync" class="level4 setting" name="sync" data-cc="36">
+<h4 class="setting" name="sync" data-cc="36">Sync</h4>
+<pre class="values"><code>{ bounds = range 0 1, labels = Some [ &quot;FREE&quot;, &quot;KEY SYNC&quot; ] }</code></pre>
+</section>
+<section id="rate" class="level4 setting" name="rate" data-cc="31"
+data-mod="77">
+<h4 class="setting" name="rate" data-cc="31" data-mod="77">Rate</h4>
+</section>
+<section id="wave" class="level4 setting" name="wave" data-cc="32"
+data-mod="78">
+<h4 class="setting" name="wave" data-cc="32" data-mod="78">Wave</h4>
+</section>
+<section id="delay" class="level4 setting" name="delay" data-cc="33"
+data-mod="79">
+<h4 class="setting" name="delay" data-cc="33" data-mod="79">Delay</h4>
+</section>
+<section id="fade" class="level4 setting" name="fade" data-cc="34"
+data-mod="80">
+<h4 class="setting" name="fade" data-cc="34" data-mod="80">Fade</h4>
+</section>
+</section>
+<section id="lfo-2" class="level3 group" name="lfo-2">
+<h3 class="group" name="lfo-2">LFO 2</h3>
+<section id="type-1" class="level4 setting" name="type" data-cc="41">
+<h4 class="setting" name="type" data-cc="41">Type</h4>
+<pre class="values"><code>{ bounds = range 0 3, labels = Some [ &quot;BPM&quot;, &quot;LOW&quot;, &quot;HIGH&quot;, &quot;TRACK&quot; ] }</code></pre>
+</section>
+<section id="sync-1" class="level4 setting" name="sync" data-cc="42">
+<h4 class="setting" name="sync" data-cc="42">Sync</h4>
+<pre class="values"><code>{ bounds = range 0 1, labels = Some [ &quot;FREE&quot;, &quot;KEY SYNC&quot; ] }</code></pre>
+</section>
+<section id="rate-1" class="level4 setting" name="rate" data-cc="37"
+data-mod="81">
+<h4 class="setting" name="rate" data-cc="37" data-mod="81">Rate</h4>
+</section>
+<section id="wave-1" class="level4 setting" name="wave" data-cc="38"
+data-mod="82">
+<h4 class="setting" name="wave" data-cc="38" data-mod="82">Wave</h4>
+</section>
+<section id="delay-1" class="level4 setting" name="delay" data-cc="39"
+data-mod="83">
+<h4 class="setting" name="delay" data-cc="39" data-mod="83">Delay</h4>
+</section>
+<section id="fade-1" class="level4 setting" name="fade" data-cc="40"
+data-mod="84">
+<h4 class="setting" name="fade" data-cc="40" data-mod="84">Fade</h4>
+</section>
+</section>
+</section>
+<section id="reverb-control" class="level2 group" name="reverb">
+<h2 class="group" name="reverb">Reverb Control</h2>
+<section id="size" class="level3 setting" name="size" data-cc="44">
+<h3 class="setting" name="size" data-cc="44">Size</h3>
+</section>
+<section id="decay-2" class="level3 setting" name="decay" data-cc="45">
+<h3 class="setting" name="decay" data-cc="45">Decay</h3>
+</section>
+<section id="filter" class="level3 setting" name="filter" data-cc="46">
+<h3 class="setting" name="filter" data-cc="46">Filter</h3>
+</section>
+<section id="mix" class="level3 setting" name="mix" data-cc="47">
+<h3 class="setting" name="mix" data-cc="47">Mix</h3>
+</section>
+</section>
+<section id="modulators" class="level2 group" name="modulators">
+<h2 class="group" name="modulators">Modulators</h2>
+<section id="selector" class="level3 setting" name="selector"
+data-cc="5">
+<h3 class="setting" name="selector" data-cc="5">Selector</h3>
+<pre class="values"><code>{ bounds = range 0 3, labels = Some [&quot;LFO 2&quot;, &quot;Mod Wheel&quot;, &quot;Velocity&quot;, &quot;Aftertouch&quot;] }</code></pre>
+</section>
+</section>
+<section id="misc" class="level2 group" name="misc">
+<h2 class="group" name="misc">Misc</h2>
+<section id="amp-level" class="level3 setting" name="amp" data-cc="7">
+<h3 class="setting" name="amp" data-cc="7">Amp level</h3>
+<p>Undocumented.</p>
+</section>
+<section id="play-mode" class="level3 setting" name="mode" data-cc="30">
+<h3 class="setting" name="mode" data-cc="30">Play mode</h3>
+<pre class="values"><code>{ bounds = range 0 5, labels = Some [&quot;POLY&quot;, &quot;UNI A&quot;, &quot;UNI B&quot;, &quot;TRI&quot;, &quot;DUO&quot;, &quot;MONO&quot;] }</code></pre>
+</section>
+<section id="legato" class="level3 setting" name="legato" data-cc="68">
+<h3 class="setting" name="legato" data-cc="68">Legato</h3>
+<pre class="values"><code>{ bounds = range 0 1 }</code></pre>
+</section>
+</section>
+</section>
+        </div>
+         <div class="col-3 col-s-3 menu" id="menu">
+                <nav id="TOC" role="doc-toc">
+                                <ul>
+                                <li><a href="#the-gui">The GUI</a></li>
+                                <li><a
+                                href="#settings">Settings</a></li>
+                                </ul>
+                </nav>
+        </div> 
+</div>
+<div class="footer">
+</div>
+</body>
+<!-- This script scrolls the page to top when a link in the TOC is clicked. -->
+<script>
+   var elems = document.getElementById("TOC").querySelectorAll("a");
+   for (var i = 0; i < elems.length; ++i) {
+      elems[i].addEventListener("click", clickFunc);
+   }
+   function clickFunc(e) {
+      e.preventDefault();
+      window.location.hash = this.hash;
+      window.scrollTo(0, 0); 
+   }
+</script>
+   <!-- Set the default landing page. Sections are set display: none by default
+        except for the one that is currently the location hash. -->
+   <script type="text/javascript">
+           if (document.location.hash == "" || document.location.hash == "#") {
+                document.location.hash = "#";
+                window.scrollTo(0, 0); 
+           }
+  </script>
+</html>
