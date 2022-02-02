@@ -65,9 +65,15 @@ class Setting:
     def validate(self):
         if not (self.bounds.lower < self.bounds.upper):
             raise ConfigValueError(self, "illegal bounds")
-        if self.enum is not None \
+        if self.labels is not None \
         and len(self.labels) != (self.bounds.upper - self.bounds.lower + 1):
             raise ConfigValueError(self, "wrong number of labels")
+
+    def is_scale(self):
+        return self.bounds.lower == 0 and self.bounds.upper == 127
+
+    def is_enum(self):
+        return self.labels is not None
 
 
 @dataclass
@@ -76,6 +82,14 @@ class Group:
     long: str
     description: Optional[str]
     content: list[Setting]
+
+    @property
+    def scales(self):
+        return list(filter(Setting.is_scale, self.content))
+
+    @property
+    def enums(self):
+        return list(filter(Setting.is_enum, self.content))
 
 
 def isgeneric(annot):

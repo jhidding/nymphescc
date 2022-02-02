@@ -19,7 +19,7 @@ pytest-mypy = "^0.9.0"
 pytest-cov = "^3.0.0"
 
 [tool.poetry.scripts]
-nymphescc = "nymphescc.main:main"
+nymphescc = "nymphescc.gtk:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

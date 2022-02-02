@@ -165,64 +165,78 @@ class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a hr
 <span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> validate(<span class="va">self</span>):</span>
 <span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> (<span class="va">self</span>.bounds.lower <span class="op">&lt;</span> <span class="va">self</span>.bounds.upper):</span>
 <span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> ConfigValueError(<span class="va">self</span>, <span class="st">&quot;illegal bounds&quot;</span>)</span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="va">self</span>.enum <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="op">\</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="va">self</span>.labels <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="op">\</span></span>
 <span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>        <span class="kw">and</span> <span class="bu">len</span>(<span class="va">self</span>.labels) <span class="op">!=</span> (<span class="va">self</span>.bounds.upper <span class="op">-</span> <span class="va">self</span>.bounds.lower <span class="op">+</span> <span class="dv">1</span>):</span>
 <span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> ConfigValueError(<span class="va">self</span>, <span class="st">&quot;wrong number of labels&quot;</span>)</span>
 <span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Group:</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>    <span class="bu">long</span>: <span class="bu">str</span></span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>    description: Optional[<span class="bu">str</span>]</span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    content: <span class="bu">list</span>[Setting]</span>
-<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> isgeneric(annot):</span>
-<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">hasattr</span>(annot, <span class="st">&quot;__origin__&quot;</span>) <span class="op">\</span></span>
-<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>        <span class="kw">and</span> <span class="bu">hasattr</span>(annot, <span class="st">&quot;__args__&quot;</span>)</span>
-<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> is_scale(<span class="va">self</span>):</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.bounds.lower <span class="op">==</span> <span class="dv">0</span> <span class="kw">and</span> <span class="va">self</span>.bounds.upper <span class="op">==</span> <span class="dv">127</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> is_enum(<span class="va">self</span>):</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.labels <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Group:</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>    <span class="bu">long</span>: <span class="bu">str</span></span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>    description: Optional[<span class="bu">str</span>]</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>    content: <span class="bu">list</span>[Setting]</span>
 <span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> construct(annot, json):</span>
-<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Construct an object from a given type from a JSON stream.</span></span>
-<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a><span class="co">    The `annot` type should be one of: str, int, list[T], Optional[T],</span></span>
-<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a><span class="co">    or a dataclass, and the JSON data should match exactly the given</span></span>
-<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a><span class="co">    definitions in the dataclass hierarchy.</span></span>
-<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
-<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> annot <span class="kw">is</span> <span class="bu">str</span>:</span>
-<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">str</span>)</span>
-<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> json</span>
-<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> annot <span class="kw">is</span> <span class="bu">int</span>:</span>
-<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">int</span>)</span>
-<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> json</span>
-<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> isgeneric(annot) <span class="kw">and</span> typing.get_origin(annot) <span class="kw">is</span> <span class="bu">list</span>:</span>
-<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">list</span>)</span>
-<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> [construct(typing.get_args(annot)[<span class="dv">0</span>], item) <span class="cf">for</span> item <span class="kw">in</span> json]</span>
-<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> isgeneric(annot) <span class="kw">and</span> typing.get_origin(annot) <span class="kw">is</span> Union <span class="op">\</span></span>
-<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>        <span class="kw">and</span> typing.get_args(annot)[<span class="dv">1</span>] <span class="kw">is</span> types.NoneType:</span>
-<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> json <span class="kw">is</span> <span class="va">None</span>:</span>
-<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">None</span></span>
-<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
-<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> construct(typing.get_args(annot)[<span class="dv">0</span>], json)</span>
-<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> is_dataclass(annot):</span>
-<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">dict</span>)</span>
-<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>        arg_annot <span class="op">=</span> typing.get_type_hints(annot)</span>
-<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">all</span>(k <span class="kw">in</span> json <span class="cf">for</span> k <span class="kw">in</span> arg_annot)</span>
-<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>        args <span class="op">=</span> { k: construct(v, json[k])</span>
-<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>                 <span class="cf">for</span> k, v <span class="kw">in</span> arg_annot.items() }</span>
-<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> annot(<span class="op">**</span>args)</span>
-<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> read_settings():</span>
-<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> resources.open_text(__package__, <span class="st">&quot;messages.dhall&quot;</span>) <span class="im">as</span> inp:</span>
-<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>        raw_data <span class="op">=</span> dhall.load(inp)</span>
-<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>    group_lst <span class="op">=</span> construct(<span class="bu">list</span>[Group], raw_data)</span>
-<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { grp.name: grp <span class="cf">for</span> grp <span class="kw">in</span> group_lst }</span>
-<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
-<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(read_settings())</span></code></pre></div>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> scales(<span class="va">self</span>):</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">list</span>(<span class="bu">filter</span>(Setting.is_scale, <span class="va">self</span>.content))</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> enums(<span class="va">self</span>):</span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">list</span>(<span class="bu">filter</span>(Setting.is_enum, <span class="va">self</span>.content))</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> isgeneric(annot):</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">hasattr</span>(annot, <span class="st">&quot;__origin__&quot;</span>) <span class="op">\</span></span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>        <span class="kw">and</span> <span class="bu">hasattr</span>(annot, <span class="st">&quot;__args__&quot;</span>)</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> construct(annot, json):</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Construct an object from a given type from a JSON stream.</span></span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a><span class="co">    The `annot` type should be one of: str, int, list[T], Optional[T],</span></span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a><span class="co">    or a dataclass, and the JSON data should match exactly the given</span></span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a><span class="co">    definitions in the dataclass hierarchy.</span></span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> annot <span class="kw">is</span> <span class="bu">str</span>:</span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">str</span>)</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> json</span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> annot <span class="kw">is</span> <span class="bu">int</span>:</span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">int</span>)</span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> json</span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> isgeneric(annot) <span class="kw">and</span> typing.get_origin(annot) <span class="kw">is</span> <span class="bu">list</span>:</span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">list</span>)</span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> [construct(typing.get_args(annot)[<span class="dv">0</span>], item) <span class="cf">for</span> item <span class="kw">in</span> json]</span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> isgeneric(annot) <span class="kw">and</span> typing.get_origin(annot) <span class="kw">is</span> Union <span class="op">\</span></span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a>        <span class="kw">and</span> typing.get_args(annot)[<span class="dv">1</span>] <span class="kw">is</span> types.NoneType:</span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> json <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> construct(typing.get_args(annot)[<span class="dv">0</span>], json)</span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> is_dataclass(annot):</span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">isinstance</span>(json, <span class="bu">dict</span>)</span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>        arg_annot <span class="op">=</span> typing.get_type_hints(annot)</span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> <span class="bu">all</span>(k <span class="kw">in</span> json <span class="cf">for</span> k <span class="kw">in</span> arg_annot)</span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a>        args <span class="op">=</span> { k: construct(v, json[k])</span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a>                 <span class="cf">for</span> k, v <span class="kw">in</span> arg_annot.items() }</span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> annot(<span class="op">**</span>args)</span>
+<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> read_settings():</span>
+<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> resources.open_text(__package__, <span class="st">&quot;messages.dhall&quot;</span>) <span class="im">as</span> inp:</span>
+<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a>        raw_data <span class="op">=</span> dhall.load(inp)</span>
+<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>    group_lst <span class="op">=</span> construct(<span class="bu">list</span>[Group], raw_data)</span>
+<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { grp.name: grp <span class="cf">for</span> grp <span class="kw">in</span> group_lst }</span>
+<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(read_settings())</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>file:nymphescc/main.py</p>
@@ -232,50 +246,152 @@ class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a hr
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .messages <span class="im">import</span> Setting, Group, read_settings</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingSlider(wx.BoxSizer):</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: Controller, setting: Setting):</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        wx.BoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.VERTICAL)</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> wx.StaticText(</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>            parent,</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span>setting.name,</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.ALIGN_CENTRE_HORIZONTAL)</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        slider <span class="op">=</span> wx.Slider(</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>            parent,</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>            minValue<span class="op">=</span>setting.bounds.lower,</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>            maxValue<span class="op">=</span>setting.bounds.upper,</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>            value<span class="op">=</span><span class="dv">0</span>,</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.SL_VERTICAL <span class="op">|</span> wx.SL_VALUE_LABEL <span class="op">|</span> wx.SL_INVERSE,</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span>setting.name,</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>            size<span class="op">=</span>wx.Size(<span class="op">-</span><span class="dv">1</span>, <span class="dv">300</span>))</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(label)</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingsGroup(wx.StaticBoxSizer):</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: wx.Window, name: <span class="bu">str</span>, group: Group):</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        wx.StaticBoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.HORIZONTAL, parent, name)</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> setting <span class="kw">in</span> group.content:</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>            slider <span class="op">=</span> SettingSlider(parent, setting)</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Controller(wx.Frame):</span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, settings: <span class="bu">dict</span>[<span class="bu">str</span>, Group]):</span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>        wx.Frame.<span class="fu">__init__</span>(<span class="va">self</span>, <span class="va">None</span>, title<span class="op">=</span><span class="st">&quot;NymphesCC&quot;</span>, size<span class="op">=</span>(<span class="dv">800</span>,<span class="dv">600</span>))</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.CreateStatusBar()</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>        sizer <span class="op">=</span> wx.BoxSizer()</span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        groups <span class="op">=</span> [<span class="st">&quot;oscillator&quot;</span>, <span class="st">&quot;filter&quot;</span>, <span class="st">&quot;envelope.filter&quot;</span>, <span class="st">&quot;envelope.amplitude&quot;</span>]</span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> select <span class="kw">in</span> groups:</span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>            sizer.AddSpacer(<span class="dv">5</span>)</span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>            sizer.Add(SettingsGroup(<span class="va">self</span>, select, settings[select]))</span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>            sizer.AddSpacer(<span class="dv">5</span>)</span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.SetSizer(sizer) </span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Show(<span class="va">True</span>)</span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>    app <span class="op">=</span> wx.App(<span class="va">False</span>)</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> read_settings()</span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>    frame <span class="op">=</span> Controller(settings)</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>    app.MainLoop()</span></code></pre></div>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingSlider(wx.BoxSizer):</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: Controller, setting: Setting):</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        wx.BoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.VERTICAL)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> wx.StaticText(</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>            parent,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span>setting.name.upper(),</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>            size<span class="op">=</span>(<span class="dv">50</span>, <span class="op">-</span><span class="dv">1</span>),</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.ALIGN_CENTRE <span class="op">|</span> wx.TEXT_ALIGNMENT_CENTER)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        slider <span class="op">=</span> wx.Slider(</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>            parent,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>            minValue<span class="op">=</span>setting.bounds.lower,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>            maxValue<span class="op">=</span>setting.bounds.upper,</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>            value<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.SL_VERTICAL <span class="op">|</span> wx.SL_VALUE_LABEL <span class="op">|</span> wx.SL_INVERSE,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span>setting.name,</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>            size<span class="op">=</span>wx.Size(<span class="op">-</span><span class="dv">1</span>, <span class="dv">300</span>))</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> setting.description <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>            label.SetHelpText(setting.description)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>            slider.SetHelpText(setting.description)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>        box <span class="op">=</span> wx.BoxSizer()</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>        box.AddSpacer(<span class="dv">10</span>)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        box.Add(label, wx.EXPAND)</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(box, wx.ALIGN_CENTER_HORIZONTAL)</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingsGroup(wx.StaticBoxSizer):</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: wx.Window, name: <span class="bu">str</span>, group: Group):</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        wx.StaticBoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.HORIZONTAL, parent, name)</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> setting <span class="kw">in</span> group.content:</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> setting.bounds.upper <span class="op">!=</span> <span class="dv">127</span>:</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>            slider <span class="op">=</span> SettingSlider(parent, setting)</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Controller(wx.Frame):</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, settings: <span class="bu">dict</span>[<span class="bu">str</span>, Group]):</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>        wx.Frame.<span class="fu">__init__</span>(<span class="va">self</span>, <span class="va">None</span>, title<span class="op">=</span><span class="st">&quot;NymphesCC&quot;</span>, size<span class="op">=</span>(<span class="dv">800</span>,<span class="dv">600</span>))</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.CreateStatusBar()</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>        vertical_stack <span class="op">=</span> wx.BoxSizer(wx.VERTICAL)</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>        horiz1 <span class="op">=</span> wx.BoxSizer()</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>        horiz2 <span class="op">=</span> wx.BoxSizer()</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>        groups1 <span class="op">=</span> [<span class="st">&quot;oscillator&quot;</span>, <span class="st">&quot;filter&quot;</span>]</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>        groups2 <span class="op">=</span> [<span class="st">&quot;envelope.filter&quot;</span>, <span class="st">&quot;envelope.amplitude&quot;</span>, <span class="st">&quot;lfo.lfo-1&quot;</span>, <span class="st">&quot;lfo.lfo-2&quot;</span>]</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> select <span class="kw">in</span> groups1:</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>            horiz1.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>            horiz1.Add(SettingsGroup(<span class="va">self</span>, select, settings[select]))</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>            horiz1.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> select <span class="kw">in</span> groups2:</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>            horiz2.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>            horiz2.Add(SettingsGroup(<span class="va">self</span>, select, settings[select]))</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>            horiz2.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>        vertical_stack.Add(horiz1)</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>        vertical_stack.Add(horiz2)</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.SetSizer(vertical_stack) </span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Show(<span class="va">True</span>)</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>    app <span class="op">=</span> wx.App(<span class="va">False</span>)</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> read_settings()</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>    frame <span class="op">=</span> Controller(settings)</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>    app.MainLoop()</span></code></pre></div>
+</div>
+<div class="named-code-block">
+<p>file:nymphescc/gtk.py</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> gi</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>gi.require_version(<span class="st">&quot;Gtk&quot;</span>, <span class="st">&quot;4.0&quot;</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> gi.repository <span class="im">import</span> Gtk</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .messages <span class="im">import</span> read_settings, Group</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> slider_group(group: Group):</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    frame <span class="op">=</span> Gtk.Frame()</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    frame.set_label(group.<span class="bu">long</span>)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> Gtk.Grid()</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    grid.set_column_spacing(<span class="dv">6</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_bottom(<span class="dv">5</span>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    frame.set_child(grid)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, s <span class="kw">in</span> <span class="bu">enumerate</span>(group.scales):</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        slider <span class="op">=</span> Gtk.Scale.new_with_range(Gtk.Orientation.VERTICAL, s.bounds.lower, s.bounds.upper, <span class="dv">1</span>)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>        slider.set_vexpand(<span class="va">True</span>)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>        slider.set_draw_value(<span class="va">True</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>        slider.set_inverted(<span class="va">True</span>)</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>        slider.set_value_pos(Gtk.PositionType.BOTTOM)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> s.tics:</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>            slider.add_mark(<span class="dv">0</span>, Gtk.PositionType.LEFT, <span class="va">None</span>)</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>            slider.add_mark(<span class="dv">63</span>, Gtk.PositionType.LEFT, <span class="va">None</span>)</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>            slider.add_mark(<span class="dv">127</span>, Gtk.PositionType.LEFT, <span class="va">None</span>)</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> t <span class="kw">in</span> s.tics:</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>                slider.add_mark(t.value, Gtk.PositionType.LEFT, t.label)</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> Gtk.Label()</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>        label.set_label(s.name.upper())</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>        grid.attach(slider, i, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>        grid.attach(label, i, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, s <span class="kw">in</span> <span class="bu">enumerate</span>(group.enums):</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>        combo <span class="op">=</span> Gtk.ComboBoxText()</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>        combo.set_margin_end(<span class="dv">5</span>)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> t <span class="kw">in</span> s.labels:</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>            combo.append(<span class="va">None</span>, t)</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> Gtk.Label.new(s.name.upper())</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> i <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>            combo.set_margin_top(<span class="dv">5</span>)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>        grid.attach(label, <span class="dv">0</span>, i<span class="op">+</span><span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>        grid.attach(combo, <span class="dv">1</span>, i<span class="op">+</span><span class="dv">2</span>, <span class="bu">len</span>(group.scales) <span class="op">-</span> <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> frame</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> on_activate(app):</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>    win <span class="op">=</span> Gtk.ApplicationWindow(application<span class="op">=</span>app)</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> read_settings()</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>    layout <span class="op">=</span> [(<span class="st">&quot;oscillator&quot;</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">1</span>), </span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;filter&quot;</span>, <span class="dv">5</span>, <span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">1</span>),</span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;envelope.filter&quot;</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>),</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;envelope.amplitude&quot;</span>, <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>),</span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;lfo.lfo-1&quot;</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>),</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;lfo.lfo-2&quot;</span>, <span class="dv">6</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>)]</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> Gtk.Grid()</span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>    grid.set_column_spacing(<span class="dv">5</span>)</span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>    grid.set_row_spacing(<span class="dv">5</span>)</span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> s, x, y, w, h <span class="kw">in</span> layout:</span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>        grid.attach(slider_group(settings[s]), x, y, w, h)</span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_top(<span class="dv">5</span>)</span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_bottom(<span class="dv">5</span>)</span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_start(<span class="dv">5</span>)</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_end(<span class="dv">5</span>)</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>    win.set_child(grid)</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>    win.present()</span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a>    app <span class="op">=</span> Gtk.Application(application_id<span class="op">=</span><span class="st">&#39;org.gtk.Example&#39;</span>)</span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a>    app.<span class="ex">connect</span>(<span class="st">&#39;activate&#39;</span>, on_activate)</span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a>    app.run(<span class="va">None</span>)</span></code></pre></div>
 </div>
 </section>
 <section id="settings" class="level1 messages">
@@ -283,31 +399,31 @@ class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a hr
 <p>From the Nymphes manual we get a table with MIDI CC messages.</p>
 <div class="named-code-block">
 <p>«schema»</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode dhall"><code class="sourceCode dhall"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Range</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { lower <span class="fu">:</span> <span class="dt">Natural</span>, upper <span class="fu">:</span> <span class="dt">Natural</span> }</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> range <span class="fu">=</span> \(lower <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(upper <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    { lower <span class="fu">=</span> lower, upper <span class="fu">=</span> upper }</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Tic</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { value <span class="fu">:</span> <span class="dt">Natural</span>, label <span class="fu">:</span> <span class="dt">Text</span> }</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> tic <span class="fu">=</span> \(value <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(label <span class="fu">:</span> <span class="dt">Text</span>) <span class="ot">-&gt;</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    { value <span class="fu">=</span> value, label <span class="fu">=</span> label }</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Setting</span> <span class="fu">=</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">Type</span>    <span class="fu">=</span> { name <span class="fu">:</span> <span class="dt">Text</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                , long <span class="fu">:</span> <span class="dt">Text</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                , cc <span class="fu">:</span> <span class="dt">Natural</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                , bounds <span class="fu">:</span> <span class="dt">Range</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Text</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Natural</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Tic</span>) }</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    , default <span class="fu">=</span> { bounds <span class="fu">=</span> range <span class="dv">0</span> <span class="dv">127</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Text</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Natural</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Tic</span>) } }</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode dhall"><code class="sourceCode dhall"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Range</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { lower <span class="fu">:</span> <span class="dt">Natural</span>, upper <span class="fu">:</span> <span class="dt">Natural</span> }</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> range <span class="fu">=</span> \(lower <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(upper <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    { lower <span class="fu">=</span> lower, upper <span class="fu">=</span> upper }</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Tic</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { value <span class="fu">:</span> <span class="dt">Natural</span>, label <span class="fu">:</span> <span class="dt">Text</span> }</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> tic <span class="fu">=</span> \(value <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(label <span class="fu">:</span> <span class="dt">Text</span>) <span class="ot">-&gt;</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    { value <span class="fu">=</span> value, label <span class="fu">=</span> label }</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Setting</span> <span class="fu">=</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">Type</span>    <span class="fu">=</span> { name <span class="fu">:</span> <span class="dt">Text</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>                , long <span class="fu">:</span> <span class="dt">Text</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                , cc <span class="fu">:</span> <span class="dt">Natural</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>                , bounds <span class="fu">:</span> <span class="dt">Range</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Text</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Natural</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Tic</span>) }</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    , default <span class="fu">=</span> { bounds <span class="fu">=</span> range <span class="dv">0</span> <span class="dv">127</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Text</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Natural</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Tic</span>) } }</span></code></pre></div>
 </div>
 <p><img src="messages.dhall" class="figure" alt="" /></p>
 <section id="oscillator-control" class="level2 group" name="oscillator">
@@ -386,7 +502,7 @@ control</h3>
 data-cc="3" data-mod="65">
 <h3 class="setting" name="hpf" data-cc="3" data-mod="65">Hipass
 Cutoff</h3>
-<pre class="values"><code>{ tics = Some [tic 0 &quot;33 hZ&quot;, tic 127 &quot;17 khZ&quot;] }</code></pre>
+<pre class="values"><code>{ tics = Some [tic 0 &quot;33 hZ&quot;, tic 63 &quot;&quot;, tic 127 &quot;17 khZ&quot;] }</code></pre>
 <p>Sets the cutoff frequency of the hipass filter. Hipass is piped after
 lopass, creating a bandpass.</p>
 </section>
@@ -394,7 +510,7 @@ lopass, creating a bandpass.</p>
 data-cc="4" data-mod="61">
 <h3 class="setting" name="cut" data-cc="4" data-mod="61">Lopass
 Cutoff</h3>
-<pre class="values"><code>{ tics = Some [tic 0 &quot;33 hZ&quot;, tic 127 &quot;17 khZ&quot;] }</code></pre>
+<pre class="values"><code>{ tics = Some [tic 0 &quot;33 hZ&quot;, tic 63 &quot;&quot;, tic 127 &quot;17 khZ&quot;] }</code></pre>
 <p>Sets the cutoff frequency of the lopass filter.</p>
 </section>
 <section id="resonance" class="level3 setting" name="res" data-cc="8"
@@ -437,9 +553,8 @@ pattern.</p>
 <li>Sustain: relative amplitude of sustain level</li>
 <li>Release: time taken after release to reach 0 amp.</li>
 </ul>
-<section id="filter-cutoff-and-pitch-envelope" class="level3 group"
-name="filter">
-<h3 class="group" name="filter">Filter Cutoff and Pitch Envelope</h3>
+<section id="pitch-envelope" class="level3 group" name="filter">
+<h3 class="group" name="filter">Pitch Envelope</h3>
 <section id="attack" class="level4 setting" name="a" data-cc="20"
 data-mod="69">
 <h4 class="setting" name="a" data-cc="20" data-mod="69">Attack</h4>

@@ -73,13 +73,13 @@ Choose from different predefined chords (see Chords tab).
 ## Filter control {.group name=filter}
 ### Hipass Cutoff {.setting name=hpf cc=3 mod=65}
 ``` {.values}
-{ tics = Some [tic 0 "33 hZ", tic 127 "17 khZ"] }
+{ tics = Some [tic 0 "33 hZ", tic 63 "", tic 127 "17 khZ"] }
 ```
 Sets the cutoff frequency of the hipass filter. Hipass is piped after lopass, creating a bandpass.
 
 ### Lopass Cutoff {.setting name=cut cc=4 mod=61}
 ``` {.values}
-{ tics = Some [tic 0 "33 hZ", tic 127 "17 khZ"] }
+{ tics = Some [tic 0 "33 hZ", tic 63 "", tic 127 "17 khZ"] }
 ```
 Sets the cutoff frequency of the lopass filter.
 
@@ -105,7 +105,7 @@ The envelopes follow classic Attack/Decay/Sustain/Release pattern.
 * Sustain: relative amplitude of sustain level
 * Release: time taken after release to reach 0 amp.
 
-### Filter Cutoff and Pitch Envelope {.group name=filter}
+### Pitch Envelope {.group name=filter}
 #### Attack {.setting name=a cc=20 mod=69}
 #### Decay {.setting name=d cc=21 mod=70}
 #### Sustain {.setting name=s cc=22 mod=71}
