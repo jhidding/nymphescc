@@ -73,13 +73,13 @@ Choose from different predefined chords (see Chords tab).
 ## Filter control {.group name=filter}
 ### Hipass Cutoff {.setting name=hpf cc=3 mod=65}
 ``` {.values}
-{ tics = Some [tic 0 "33 hZ", tic 63 "", tic 127 "17 khZ"] }
+{ tics = Some [tic 0 "33", tic 63 "", tic 127 "17k"] }
 ```
 Sets the cutoff frequency of the hipass filter. Hipass is piped after lopass, creating a bandpass.
 
 ### Lopass Cutoff {.setting name=cut cc=4 mod=61}
 ``` {.values}
-{ tics = Some [tic 0 "33 hZ", tic 63 "", tic 127 "17 khZ"] }
+{ tics = Some [tic 0 "33", tic 63 "", tic 127 "17k"] }
 ```
 Sets the cutoff frequency of the lopass filter.
 
