@@ -278,36 +278,56 @@ def slider_group(group: Group):
     return frame
 
 
-def mode_selector(group: Group):
-    frame = Gtk.Frame()
-    frame.set_label(group.long)
-    setting = group.content[0]
+def list_box_label(name: str):
+    label = Gtk.Label()
+    label.set_label(name)
+    label.set_margin_top(5)
+    label.set_margin_bottom(5)
+    return label
+
+
+def list_box_setting(setting: Setting):
     list_box = Gtk.ListBox()
-    for name in ["Unmodulated"] + setting.labels:
-        label = Gtk.Label()
-        label.set_label(name)
-        label.set_margin_top(5)
-        label.set_margin_bottom(5)
-        list_box.append(label)
+    for name in setting.labels:
+        list_box.append(list_box_label(name))
     list_box.set_hexpand(True)
     list_box.set_selection_mode(Gtk.SelectionMode.BROWSE)
+    list_box.set_vexpand(True)
+    return list_box
+
+
+def mode_selector(mod_group: Group, play_group: Group):
+    vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 5)
+
+    frame = Gtk.Frame()
+    frame.set_label(mod_group.long)
+    setting = mod_group.content[0]
+    list_box = list_box_setting(setting)
+    list_box.insert(list_box_label("Unmodulated"), 0)
     list_box.select_row(list_box.get_row_at_index(0))
     frame.set_child(list_box)
-    return frame
+    vbox.append(frame)
+
+    frame = Gtk.Frame()
+    setting = next(s for s in play_group.content if s.name == "mode")
+    frame.set_label(setting.long)
+    list_box = list_box_setting(setting)
+    frame.set_child(list_box)
+    vbox.append(frame)
+
+    return vbox
 
 
 def on_activate(app):
     win = Gtk.ApplicationWindow(application=app, title="NymphesCC")
-    win.set_default_size(1300, 768)
+    win.set_default_size(1500, 1000)
     header_bar = Gtk.HeaderBar()
     header_bar.set_show_title_buttons(True)
     side_bar_button = Gtk.Button()
-    icon = Gio.ThemedIcon(name="document-open")
-    image = Gtk.Image.new_from_gicon(icon)
+    image = Gtk.Image.new_from_icon_name("view-list-symbolic")
     side_bar_button.set_child(image)
     header_bar.pack_start(side_bar_button)
     win.set_titlebar(header_bar)
-    scrolled_win = Gtk.ScrolledWindow()
 
     settings = read_settings()
     layout = [("oscillator", 0, 0, 5, 1), 
@@ -315,7 +335,8 @@ def on_activate(app):
               ("envelope.filter", 0, 1, 2, 1),
               ("envelope.amplitude", 2, 1, 2, 1),
               ("lfo.lfo-1", 4, 1, 2, 1),
-              ("lfo.lfo-2", 6, 1, 2, 1)]
+              ("lfo.lfo-2", 6, 1, 2, 1),
+              ("reverb", 8, 1, 2, 1)]
     grid = Gtk.Grid()
     grid.set_column_spacing(5)
     grid.set_row_spacing(5)
@@ -324,14 +345,29 @@ def on_activate(app):
 
     for s, x, y, w, h in layout:
         grid.attach(slider_group(settings[s]), x, y, w, h)
-    grid.attach(mode_selector(settings["modulators"]), 8, 0, 1, 1)
+    grid.attach(mode_selector(settings["modulators"], settings["misc"]), 8, 0, 2, 1)
     grid.set_margin_top(5)
     grid.set_margin_bottom(5)
     grid.set_margin_start(5)
     grid.set_margin_end(5)
 
-    scrolled_win.set_child(grid)
-    win.set_child(scrolled_win)
+    side_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
+    session_control_box = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
+    new_snapshot_button = Gtk.Button()
+    new_snapshot_button.set_child(Gtk.Image.new_from_icon_name("value-increase-symbolic"))
+    session_control_box.append(new_snapshot_button)
+    side_box.append(session_control_box)
+    session_tree_view = Gtk.TreeView()
+    side_box.append(session_tree_view)
+
+    scrolled_main = Gtk.ScrolledWindow()
+    scrolled_main.set_child(grid)
+    scrolled_side = Gtk.ScrolledWindow()
+    scrolled_side.set_child(side_box)
+    paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
+    paned.set_start_child(scrolled_side)
+    paned.set_end_child(scrolled_main)
+    win.set_child(paned)
     win.present()
 
 
