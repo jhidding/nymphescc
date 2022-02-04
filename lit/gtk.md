@@ -1,5 +1,7 @@
-# ~\~ language=Python filename=nymphescc/gtk.py
-# ~\~ begin <<lit/gtk.md|nymphescc/gtk.py>>[0]
+# GUI
+The GUI is using Gtk 4.0.
+
+``` {.python file=nymphescc/gtk.py}
 import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gio
@@ -145,4 +147,4 @@ def main():
     app = Gtk.Application(application_id='org.gtk.Example')
     app.connect('activate', on_activate)
     app.run(None)
-# ~\~ end
+```

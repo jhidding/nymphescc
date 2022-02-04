@@ -33,33 +33,33 @@ let Setting =
         }
       }
 
-in  [ { name = "lfo"
-      , long = "LFO Control"
-      , description = None Text
-      , content = [] : List Setting.Type
-      }
-    , { name = "envelope.amplitude"
-      , long = "Amplitude Envelope"
-      , description = None Text
-      , content =
-            [ Setting::{ cc = 24, long = "Attack", mod = Some 73, name = "a" }
-            , Setting::{ cc = 25, long = "Decay", mod = Some 74, name = "d" }
-            , Setting::{ cc = 26, long = "Sustain", mod = Some 75, name = "s" }
-            , Setting::{ cc = 27, long = "Release", mod = Some 76, name = "r" }
-            ]
-          : List Setting.Type
-      }
-    , { name = "modulators"
-      , long = "Modulators"
+in  [ { name = "lfo.lfo-2"
+      , long = "LFO 2"
       , description = None Text
       , content =
             [ Setting::{
               , bounds = { lower = 0, upper = 3 }
-              , cc = 5
-              , labels = Some [ "LFO 2", "Mod Wheel", "Velocity", "Aftertouch" ]
-              , long = "Selector"
-              , name = "selector"
+              , cc = 41
+              , labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ]
+              , long = "Type"
+              , name = "type"
               }
+            , Setting::{
+              , bounds = { lower = 0, upper = 1 }
+              , cc = 42
+              , labels = Some [ "FREE", "KEY SYNC" ]
+              , long = "Sync"
+              , name = "sync"
+              }
+            , Setting::{ cc = 37, long = "Rate", mod = Some 81, name = "rate" }
+            , Setting::{ cc = 38, long = "Wave", mod = Some 82, name = "wave" }
+            , Setting::{
+              , cc = 39
+              , long = "Delay"
+              , mod = Some 83
+              , name = "delay"
+              }
+            , Setting::{ cc = 40, long = "Fade", mod = Some 84, name = "fade" }
             ]
           : List Setting.Type
       }
@@ -90,6 +90,102 @@ in  [ { name = "lfo"
               , name = "delay"
               }
             , Setting::{ cc = 34, long = "Fade", mod = Some 80, name = "fade" }
+            ]
+          : List Setting.Type
+      }
+    , { name = "filter"
+      , long = "Filter control"
+      , description = None Text
+      , content =
+            [ Setting::{
+              , cc = 3
+              , description = Some
+                  ''
+                  Sets the cutoff frequency of the hipass filter. Hipass is piped after
+                  lopass, creating a bandpass.
+                  ''
+              , long = "Hipass Cutoff"
+              , mod = Some 65
+              , name = "hpf"
+              , tics = Some
+                [ { label = "33 hZ", value = 0 }
+                , { label = "", value = 63 }
+                , { label = "17 khZ", value = 127 }
+                ]
+              }
+            , Setting::{
+              , cc = 4
+              , description = Some
+                  ''
+                  Sets the cutoff frequency of the lopass filter.
+                  ''
+              , long = "Lopass Cutoff"
+              , mod = Some 61
+              , name = "cut"
+              , tics = Some
+                [ { label = "33 hZ", value = 0 }
+                , { label = "", value = 63 }
+                , { label = "17 khZ", value = 127 }
+                ]
+              }
+            , Setting::{
+              , cc = 8
+              , description = Some
+                  ''
+                  Sets the amount of filter resonance, i.e. how much upper frequencies are
+                  amplified.
+                  ''
+              , long = "Resonance"
+              , mod = Some 62
+              , name = "res"
+              }
+            , Setting::{
+              , cc = 6
+              , description = Some
+                  ''
+                  Sets how much the filter cutoff tracks the frequency of the main
+                  oscillator. At 127 the cutoff frequncy tracks the oscillator pitch 1:1.
+                  In combination with high resonance this can create beautiful overtones.
+
+                  If you set this to other fractions (e.g. 63 for quarter tones), use only
+                  noise as a sound source, and beef up resonance, you can play microtonal
+                  music!
+                  ''
+              , long = "Tracking"
+              , mod = Some 66
+              , name = "track"
+              }
+            , Setting::{
+              , cc = 9
+              , description = Some
+                  ''
+                  Sets how much the filter envelope modulates the filter cutoff.
+                  ''
+              , long = "Envelope generator"
+              , mod = Some 63
+              , name = "eg"
+              }
+            , Setting::{
+              , cc = 10
+              , description = Some
+                  ''
+                  Sets how much LFO 1 modulates the filter frequency cutoff.
+                  ''
+              , long = "Low frequency oscillator"
+              , mod = Some 67
+              , name = "lfo"
+              }
+            ]
+          : List Setting.Type
+      }
+    , { name = "envelope.filter"
+      , long = "Pitch Envelope"
+      , description = None Text
+      , content =
+            [ Setting::{ cc = 20, long = "Attack", mod = Some 69, name = "a" }
+            , Setting::{ cc = 21, long = "Decay", mod = Some 70, name = "d" }
+            , Setting::{ cc = 22, long = "Sustain", mod = Some 71, name = "s" }
+            , Setting::{ cc = 23, long = "Release", mod = Some 72, name = "r" }
             ]
           : List Setting.Type
       }
@@ -243,100 +339,21 @@ in  [ { name = "lfo"
             ]
           : List Setting.Type
       }
-    , { name = "envelope"
-      , long = "Envelope"
-      , description = Some
-          ''
-          The envelopes follow classic Attack/Decay/Sustain/Release pattern.
-
-          -   Attack: time taken to reach maximum amplitude
-          -   Decay: time taken to reach sustain level
-          -   Sustain: relative amplitude of sustain level
-          -   Release: time taken after release to reach 0 amp.
-          ''
+    , { name = "lfo"
+      , long = "LFO Control"
+      , description = None Text
       , content = [] : List Setting.Type
       }
-    , { name = "filter"
-      , long = "Filter control"
+    , { name = "modulators"
+      , long = "Modulators"
       , description = None Text
       , content =
             [ Setting::{
-              , cc = 3
-              , description = Some
-                  ''
-                  Sets the cutoff frequency of the hipass filter. Hipass is piped after
-                  lopass, creating a bandpass.
-                  ''
-              , long = "Hipass Cutoff"
-              , mod = Some 65
-              , name = "hpf"
-              , tics = Some
-                [ { label = "33", value = 0 }
-                , { label = "", value = 63 }
-                , { label = "17k", value = 127 }
-                ]
-              }
-            , Setting::{
-              , cc = 4
-              , description = Some
-                  ''
-                  Sets the cutoff frequency of the lopass filter.
-                  ''
-              , long = "Lopass Cutoff"
-              , mod = Some 61
-              , name = "cut"
-              , tics = Some
-                [ { label = "33", value = 0 }
-                , { label = "", value = 63 }
-                , { label = "17k", value = 127 }
-                ]
-              }
-            , Setting::{
-              , cc = 8
-              , description = Some
-                  ''
-                  Sets the amount of filter resonance, i.e. how much upper frequencies are
-                  amplified.
-                  ''
-              , long = "Resonance"
-              , mod = Some 62
-              , name = "res"
-              }
-            , Setting::{
-              , cc = 6
-              , description = Some
-                  ''
-                  Sets how much the filter cutoff tracks the frequency of the main
-                  oscillator. At 127 the cutoff frequncy tracks the oscillator pitch 1:1.
-                  In combination with high resonance this can create beautiful overtones.
-
-                  If you set this to other fractions (e.g. 63 for quarter tones), use only
-                  noise as a sound source, and beef up resonance, you can play microtonal
-                  music!
-                  ''
-              , long = "Tracking"
-              , mod = Some 66
-              , name = "track"
-              }
-            , Setting::{
-              , cc = 9
-              , description = Some
-                  ''
-                  Sets how much the filter envelope modulates the filter cutoff.
-                  ''
-              , long = "Envelope generator"
-              , mod = Some 63
-              , name = "eg"
-              }
-            , Setting::{
-              , cc = 10
-              , description = Some
-                  ''
-                  Sets how much LFO 1 modulates the filter frequency cutoff.
-                  ''
-              , long = "Low frequency oscillator"
-              , mod = Some 67
-              , name = "lfo"
+              , bounds = { lower = 0, upper = 3 }
+              , cc = 5
+              , labels = Some [ "LFO 2", "Mod Wheel", "Velocity", "Aftertouch" ]
+              , long = "Selector"
+              , name = "selector"
               }
             ]
           : List Setting.Type
@@ -352,45 +369,28 @@ in  [ { name = "lfo"
             ]
           : List Setting.Type
       }
-    , { name = "envelope.filter"
-      , long = "Pitch Envelope"
+    , { name = "envelope.amplitude"
+      , long = "Amplitude Envelope"
       , description = None Text
       , content =
-            [ Setting::{ cc = 20, long = "Attack", mod = Some 69, name = "a" }
-            , Setting::{ cc = 21, long = "Decay", mod = Some 70, name = "d" }
-            , Setting::{ cc = 22, long = "Sustain", mod = Some 71, name = "s" }
-            , Setting::{ cc = 23, long = "Release", mod = Some 72, name = "r" }
+            [ Setting::{ cc = 24, long = "Attack", mod = Some 73, name = "a" }
+            , Setting::{ cc = 25, long = "Decay", mod = Some 74, name = "d" }
+            , Setting::{ cc = 26, long = "Sustain", mod = Some 75, name = "s" }
+            , Setting::{ cc = 27, long = "Release", mod = Some 76, name = "r" }
             ]
           : List Setting.Type
       }
-    , { name = "lfo.lfo-2"
-      , long = "LFO 2"
-      , description = None Text
-      , content =
-            [ Setting::{
-              , bounds = { lower = 0, upper = 3 }
-              , cc = 41
-              , labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ]
-              , long = "Type"
-              , name = "type"
-              }
-            , Setting::{
-              , bounds = { lower = 0, upper = 1 }
-              , cc = 42
-              , labels = Some [ "FREE", "KEY SYNC" ]
-              , long = "Sync"
-              , name = "sync"
-              }
-            , Setting::{ cc = 37, long = "Rate", mod = Some 81, name = "rate" }
-            , Setting::{ cc = 38, long = "Wave", mod = Some 82, name = "wave" }
-            , Setting::{
-              , cc = 39
-              , long = "Delay"
-              , mod = Some 83
-              , name = "delay"
-              }
-            , Setting::{ cc = 40, long = "Fade", mod = Some 84, name = "fade" }
-            ]
-          : List Setting.Type
+    , { name = "envelope"
+      , long = "Envelope"
+      , description = Some
+          ''
+          The envelopes follow classic Attack/Decay/Sustain/Release pattern.
+
+          -   Attack: time taken to reach maximum amplitude
+          -   Decay: time taken to reach sustain level
+          -   Sustain: relative amplitude of sustain level
+          -   Release: time taken after release to reach 0 amp.
+          ''
+      , content = [] : List Setting.Type
       }
     ]

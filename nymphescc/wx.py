@@ -1,5 +1,5 @@
-# ~\~ language=Python filename=nymphescc/main.py
-# ~\~ begin <<README.md|nymphescc/main.py>>[0]
+# ~\~ language=Python filename=nymphescc/wx.py
+# ~\~ begin <<lit/wx.md|nymphescc/wx.py>>[0]
 from __future__ import annotations
 import wx
 
