@@ -147,6 +147,11 @@ def read_settings():
     return { grp.name: grp for grp in group_lst }
 
 
+def modulators(settings):
+    labels = settings["modulators"].content[0].labels
+    return ["Baseline"] + labels
+
+
 if __name__ == "__main__":
     print(read_settings())
 ```

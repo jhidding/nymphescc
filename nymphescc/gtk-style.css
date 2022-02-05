@@ -1,0 +1,19 @@
+.mod-lfo-2 scale.mod trough highlight, .mod-lfo-2 list.mod row:selected {
+    background-color: #cc0000;
+    border-color: #cc0000;
+}
+
+.mod-mod-wheel scale.mod trough highlight, .mod-mod-wheel list.mod row:selected {
+    background-color: #8800ff;
+    border-color: #8800ff;
+} 
+ 
+.mod-velocity scale.mod trough highlight, .mod-velocity list.mod row:selected {
+    background-color: #008800;
+    border-color: #008800;
+}
+
+.mod-aftertouch scale.mod trough highlight, .mod-aftertouch list.mod row:selected {
+    background-color: #ff8800;
+    border-color: #ff8800;
+}

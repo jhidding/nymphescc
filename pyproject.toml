@@ -8,10 +8,10 @@ authors = ["Johan Hidding <j.hidding@esciencecenter.nl>"]
 python = "^3.10"
 wxPython = "^4.1.1"
 mido = "^1.2.10"
-pyalsaaudio = {version = "^0.9.0", platform = "linux"}
 dhall = "^0.1.12"
 pycairo = "^1.20.1"
 PyGObject = "^3.42.0"
+alsa-midi = "^0.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0.0rc1"
