@@ -3,6 +3,7 @@ At the core we have a bank with known values for each Midi CC. The application s
 
 ``` {.python file=nymphescc/core.py}
 from dataclasses import dataclass
+import asyncio
 from queue import Queue
 from .messages import read_settings, modulators, Setting, Group
 
@@ -10,7 +11,46 @@ from .messages import read_settings, modulators, Setting, Group
 @dataclass
 class Port:
     name: str
-    selected_mod: int
+    caps: str
+    selected_mod: int = 0
+
+
+try:
+    import alsa_midi
+except ImportError:
+    alsa_client = None
+else:
+    from alsa_midi import PortCaps, PortType, ControlChangeEvent
+    alsa_client = alsa_midi.AsyncSequencerClient("NymphesCC")
+
+
+class AlsaPort(Port):
+    def __init__(self, name, caps="duplex"):
+        super().__init__(name, caps)
+        match caps:
+            case "duplex":
+                self._port = alsa_client.create_port(name, PortCaps.DUPLEX)
+            case "in":
+                self._port = alsa_client.create_port(name, PortCaps.READ)
+            case "out":
+                self._port = alsa_client.create_port(name, PortCaps.WRITE)
+
+    async def send_cc(self, channel, param, value):
+        await alsa_client.event_output(
+            ControlChangeEvent(channel, param, value),
+            port=self._port)
+        await alsa_client.drain_output()
+
+    async def read_cc(self):
+        port_id = self._port.get_info().port_id
+        while True:
+            event = await alsa_client.event_input()
+            if event is not None and event.dest.port_id == port_id:
+                match event:
+                    case ControlChangeEvent(chan, param, value):
+                        yield chan, param, value
+
+
 
 
 @dataclass
