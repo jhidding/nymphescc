@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 
 from .messages import read_settings, Group, Setting, modulators
+from .core import Register
 
 
 def slider_group(group: Group, on_changed):
@@ -114,7 +115,7 @@ def mode_selector(settings: dict[str, Group]):
 
 
 def on_activate(app, qs):
-    q_in, q_out = qs
+    q_in, q_out, register = qs
     win = Gtk.ApplicationWindow(application=app, title="NymphesCC")
     css_provider = Gtk.CssProvider()
     with resources.path(__package__, "gtk-style.css") as path:
@@ -139,7 +140,7 @@ def on_activate(app, qs):
 
     def read_input_queue():
         while True:
-            ctrl, value = q_in.get()
+            ctrl, mod, value = q_in.get()
             if ctrl == "quit":
                 return
             GLib.idle_add(set_ui_value, ctrl, value)
@@ -147,6 +148,9 @@ def on_activate(app, qs):
 
     def write_output_queue(ctrl, value):
         mod = controls["modulators.selector"].get_selected_row().get_index()
+        if register.flat_config[ctrl].mod is None:
+            mod = 0
+        register.gui_msg(ctrl, mod, value)
         q_out.put_nowait((ctrl, mod, value))
 
     def on_changed(widget, *args):
@@ -163,10 +167,16 @@ def on_activate(app, qs):
 
     def on_mod_change(widget, row):
         value = row.get_child().get_label().lower().replace(" ", "-")
+        index = row.get_index()
         css_classes = [re.sub("mod-.*", f"mod-{value}", c)
                        for c in grid.get_css_classes()]
-        print(css_classes)
         grid.set_css_classes(css_classes)
+        for name, setting in register.flat_config.items():
+            if setting.mod is not None:
+                widget = controls[name]
+                match widget:
+                    case Gtk.Scale():
+                        widget.set_value(register.values[index][name])
         q_out.put_nowait(("select-mod", None, row.get_index()))
 
     settings = read_settings()
@@ -219,14 +229,14 @@ def on_activate(app, qs):
     win.present()
 
 
-def spawn(q_in: Queue, q_out: Queue):
+def spawn(q_in: Queue, q_out: Queue, register: Register):
     app = Gtk.Application(application_id='org.nymphescc')
 
     def stop_threads(_):
         q_in.put_nowait(("quit", 0, 0))
         q_out.put_nowait(("quit", 0, 0))
 
-    app.connect('activate', on_activate, (q_in, q_out))
+    app.connect('activate', on_activate, (q_in, q_out, register))
     app.connect('shutdown', stop_threads)
     app.run(None)
 
@@ -234,6 +244,7 @@ def spawn(q_in: Queue, q_out: Queue):
 def main():
     q_in = Queue()
     q_out = Queue()
+    register = Register.new()
 
     def print_messages():
         while True:
@@ -244,5 +255,5 @@ def main():
             q_out.task_done()
 
     Thread(target=print_messages).start()
-    spawn(q_in, q_out)
+    spawn(q_in, q_out, register)
 ```
