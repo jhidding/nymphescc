@@ -5,10 +5,17 @@ from .messages import read_settings, modulators, Setting, Group
 
 
 @dataclass
+class Port:
+    name: str
+    selected_mod: int
+
+
+@dataclass
 class Register:
     flat_config: dict[str, Setting]
     midi_map: dict[int, tuple[str, str]]
     values: dict[str, dict[str, int]]
+    ports: dict[str, Port] = None   
 
     @staticmethod
     def new():

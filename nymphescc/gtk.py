@@ -144,7 +144,8 @@ def on_activate(app, qs):
             q_in.task_done()
 
     def write_output_queue(ctrl, value):
-        q_out.put_nowait((ctrl, value))
+        mod = controls["modulators.selector"].get_selected_row().get_index()
+        q_out.put_nowait((ctrl, mod, value))
 
     def on_changed(widget, *args):
         match widget:
@@ -164,7 +165,7 @@ def on_activate(app, qs):
                        for c in grid.get_css_classes()]
         print(css_classes)
         grid.set_css_classes(css_classes)
-        q_out.put_nowait(("select-mod", row.get_index()))
+        q_out.put_nowait(("select-mod", None, row.get_index()))
 
     settings = read_settings()
     layout = [("oscillator", 0, 0, 5, 1), 
@@ -220,8 +221,8 @@ def spawn(q_in: Queue, q_out: Queue):
     app = Gtk.Application(application_id='org.nymphescc')
 
     def stop_threads(_):
-        q_in.put_nowait(("quit", 0))
-        q_out.put_nowait(("quit", 0))
+        q_in.put_nowait(("quit", 0, 0))
+        q_out.put_nowait(("quit", 0, 0))
 
     app.connect('activate', on_activate, (q_in, q_out))
     app.connect('shutdown', stop_threads)
@@ -234,10 +235,10 @@ def main():
 
     def print_messages():
         while True:
-            ctrl, value = q_out.get()
+            ctrl, mod, value = q_out.get()
             if ctrl == "quit":
                 return
-            print(ctrl, value)
+            print(ctrl, mod, value)
             q_out.task_done()
 
     Thread(target=print_messages).start()
