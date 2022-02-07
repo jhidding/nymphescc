@@ -9,7 +9,9 @@ import threading
 from threading import Thread
 from importlib import resources
 import re
+from datetime import datetime
 
+from xdg import xdg_config_home
 import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, GLib, Gdk
@@ -18,6 +20,7 @@ from dataclasses import dataclass
 
 from .messages import read_settings, Group, Setting, modulators
 from .core import Register, AlsaPort
+from .db import NymphesDB
 
 
 class Interface:
@@ -29,6 +32,10 @@ class Interface:
         self.nymphes_out_port = AlsaPort("device-out", "out")
         self.through_port = AlsaPort("through", "in")
         self.quit_event = threading.Event()
+        self.db = NymphesDB()
+
+        self.nymphes_in_port.auto_connect()
+        self.nymphes_in_port.auto_connect()
 
     def set_ui(self, ctrl, mod, value):
         GLib.idle_add(self.set_ui_value, ctrl, mod, value)
@@ -71,6 +78,16 @@ class Interface:
             else:
                 self.register.values[0][ctrl] = value
                 self.set_ui(ctrl, 0, value)
+
+
+def make_tree_store(db: NymphesDB):
+    store = Gtk.TreeStore(int, str, str, str)   # name, tag-list, date
+    tree = db.tree()
+    for grp_id, grp_name, snaps in tree:
+        grp = store.append(None, (grp_id, grp_name, None, None))
+        for snap_id, name, tags, date in snaps:
+            store.append(grp, (snap_id, name, tags, date))
+    return store
 
 
 def slider_group(group: Group, on_changed):
@@ -189,6 +206,10 @@ def on_activate(app, iface):
     def set_ui_value(ctrl, mod, value):
         if mod != controls["modulators.selector"].get_selected_row().get_index():
             return
+        if ctrl not in controls:
+            logging.warn("no widget to control %s", ctrl)
+            return
+
         match controls[ctrl]:
             case Gtk.Scale():
                 controls[ctrl].set_value(value)
@@ -263,12 +284,34 @@ def on_activate(app, iface):
     grid.set_margin_start(5)
     grid.set_margin_end(5)
 
+    for mod, v in iface.register.values.items():
+        for ctrl, value in v.items():
+            set_ui_value(ctrl, mod, value)
+
     side_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
     new_snapshot_button = Gtk.Button()
     new_snapshot_button.set_child(Gtk.Image.new_from_icon_name("value-increase-symbolic"))
-    session_tree_view = Gtk.TreeView()
+    tree_store = make_tree_store(iface.db)
+    db_tree_view = Gtk.TreeView.new_with_model(tree_store)
+    db_col_1 = Gtk.TreeViewColumn()
+    db_cell_1 = Gtk.CellRendererText()
+    db_cell_1.set_property("editable", True)
+    db_cell_2 = Gtk.CellRendererText()
+    db_cell_2.set_property("editable", True)
+    db_col_1.set_title("Name")
+    db_col_1.pack_start(db_cell_1, True)
+    db_col_1.add_attribute(db_cell_1, "text", 1)
+    db_col_2 = Gtk.TreeViewColumn()
+    db_col_2.set_title("Tags")
+    db_col_2.pack_start(db_cell_2, True)
+    db_col_2.add_attribute(db_cell_2, "text", 2)
+
+    db_tree_view.append_column(db_col_1)
+    db_tree_view.append_column(db_col_2)
+    db_tree_view.set_vexpand(True)
+
     scrolled_side = Gtk.ScrolledWindow()
-    scrolled_side.set_child(session_tree_view)
+    scrolled_side.set_child(db_tree_view)
     scrolled_side.set_vexpand(True)
     side_box.append(scrolled_side)
     side_box.append(new_snapshot_button)

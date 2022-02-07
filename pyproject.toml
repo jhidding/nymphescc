@@ -12,6 +12,7 @@ dhall = "^0.1.12"
 pycairo = "^1.20.1"
 PyGObject = "^3.42.0"
 alsa-midi = { git="https://github.com/Jajcus/python-alsa-midi.git", branch="main" }
+xdg = "^5.1.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0.0rc1"

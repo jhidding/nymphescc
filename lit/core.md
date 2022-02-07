@@ -2,11 +2,14 @@
 At the core we have a bank with known values for each Midi CC. The application should have an external MIDI In for 3rd party devices and a duplex connection with the Nymphes. Messages from MIDI In should be forwarded to the Nymphes, while messages from Nymphes should only affect the internal state of NymphesCC.
 
 ``` {.python file=nymphescc/core.py}
+from abc import abstractmethod
 from dataclasses import dataclass
 import logging
 from queue import Queue
 from threading import Event
 from .messages import read_settings, modulators, Setting, Group
+import mido
+import io
 
 
 @dataclass
@@ -14,6 +17,29 @@ class Port:
     name: str
     caps: str
     selected_mod: int = 0
+
+    @abstractmethod
+    def send_cc(self, channel, param, value):
+        pass
+
+
+class BytesPort(Port):
+    def __init__(self, name, caps, buffer=b""):
+        super().__init__(name, caps)
+        self._file = io.BytesIO(buffer)
+
+    def send_cc(self, channel, param, value):
+        msg = mido.Message("control_change", channel=channel, param=param, value=value)
+        self._file.write(msg.bin())
+
+    @property
+    def bytes(self):
+        return self._file.getbuffer()
+
+    def read_cc(self):
+        for msg in mido.Parser().feed(self.bytes):
+            if msg.is_cc():
+                yield msg.channel, msg.param, msg.value
 
 
 try:
@@ -35,6 +61,24 @@ class AlsaPort(Port):
                 self._port = alsa_client.create_port(name, READ_PORT, type=PortType.MIDI_GENERIC)
             case _:
                 raise ValueError(f"Unknown port caps '{caps}'")
+
+    def auto_connect(self):
+        if self.caps == "in":
+            ports = alsa_client.list_ports(input=True)
+            try:
+                target = next(p for p in ports if p.client_name == "Nymphes")
+            except StopIteration:
+                logging.warn("Could not auto-connect to Nymphes.")
+            else:
+                self._port.connect_from(target)
+        if self.caps == "out":
+            ports = alsa_client.list_ports(output=True)
+            try:
+                target = next(p for p in ports if p.client_name == "Nymphes")
+            except StopIteration:
+                logging.warn("Could not auto-connect to Nymphes.")
+            else:
+                self._port.connect_to(target)
 
     def send_cc(self, channel, param, value):
         alsa_client.event_output(
@@ -92,13 +136,24 @@ class Register:
             { v.mod: ("mod", k)
               for k, v in flat_config.items()
               if v.mod }
-        values = { mod: { k: 0 for k in flat_config.keys() }
-                   for mod in range(len(modulators(config))) }
+        baseline_values = { k: 0 for k in flat_config.keys() }
+        values = { mod: { k: 0 for k, v in flat_config.items() if v.mod is not None}
+                   for mod in range(1, len(modulators(config))) } \
+               | { 0: baseline_values }
 
         return Register(
             flat_config,
             midi_map_global | midi_map_baseline | midi_map_mod,
             values)
+
+    def send_cc(self, port, ctrl, mod, value):
+        if mod is not None and mod != 0:
+            if port.selected_mod != mod:
+                port.send_cc(0, self.flat_config["modulators.selector"].cc, mod - 1)
+                port.selected_mod = mod
+            port.send_cc(0, self.flat_config[ctrl].mod, value)
+        else:
+            port.send_cc(0, self.flat_config[ctrl].cc, value)
 ```
 
 ## Reading messages
