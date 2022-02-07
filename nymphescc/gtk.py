@@ -1,7 +1,9 @@
 # ~\~ language=Python filename=nymphescc/gtk.py
 # ~\~ begin <<lit/gtk.md|nymphescc/gtk.py>>[0]
-import asyncio
+import logging
+import queue
 from queue import Queue
+import threading
 from threading import Thread
 from importlib import resources
 import re
@@ -24,15 +26,20 @@ class Interface:
         self.nymphes_in_port = AlsaPort("device-in", "in")
         self.nymphes_out_port = AlsaPort("device-out", "out")
         self.through_port = AlsaPort("through", "in")
+        self.quit_event = threading.Event()
 
     def set_ui(self, ctrl, mod, value):
         GLib.idle_add(self.set_ui_value, ctrl, mod, value)
 
     def send_nymphes(self):
         while True:
-            ctrl, mod, value = self.q_out.get()
-            if ctrl == "quit":
-                break
+            try:
+                ctrl, mod, value = self.q_out.get(timeout=0.1)
+            except queue.Empty:
+                if self.quit_event.is_set():
+                    break
+                else:
+                    continue
 
             if mod is not None and mod != 0 and self.nymphes_out_port.selected_mod != mod:
                 self.nymphes_out_port.send_cc(
@@ -48,15 +55,16 @@ class Interface:
             self.q_out.task_done()
 
     def read_nymphes(self):
-        for chan, param, value in self.nymphes_in_port.read_cc():
+        for chan, param, value in self.nymphes_in_port.read_cc(self.quit_event):
             kind, ctrl = self.register.midi_map[param]
+            logging.debug("msg %u %u %u, read as %s:%s", chan, param, value, kind, ctrl)
             if kind == "mod":
-                self.register.values[self.nymphes_in_port.selected_mod][param] = value
+                self.register.values[self.nymphes_in_port.selected_mod][ctrl] = value
                 self.set_ui(ctrl, self.nymphes_in_port.selected_mod, value)
             elif ctrl == "modulators.selector":
                 self.nymphes_in_port.selected_mod = value + 1
             else:
-                self.register.values[0][param] = value
+                self.register.values[0][ctrl] = value
                 self.set_ui(ctrl, 0, value)
 
 
@@ -181,6 +189,9 @@ def on_activate(app, iface):
                 controls[ctrl].set_value(value)
             case Gtk.ComboBoxText():
                 controls[ctrl].set_active(value)
+            case Gtk.ListBox():
+                w = controls[ctrl]
+                w.select_row(w.get_row_at_index(value))
 
     iface.set_ui_value = set_ui_value
 
@@ -215,6 +226,8 @@ def on_activate(app, iface):
                 match widget:
                     case Gtk.Scale():
                         widget.set_value(iface.register.values[index][name])
+                    case Gtk.ComboBox():
+                        widget.set_active(iface.register.values[index][name])
         iface.q_out.put_nowait(("modulators.selector", None, row.get_index()))
 
     settings = read_settings()
@@ -270,7 +283,7 @@ def spawn(iface: Interface):
     app = Gtk.Application(application_id='org.nymphescc')
 
     def stop_threads(_):
-        iface.q_out.put_nowait(("quit", 0, 0))
+        iface.quit_event.set()
 
     app.connect('activate', on_activate, iface)
     app.connect('shutdown', stop_threads)
@@ -278,6 +291,7 @@ def spawn(iface: Interface):
 
 
 def main():
+    logging.getLogger().setLevel(logging.DEBUG)
     iface = Interface()
     # Thread(target=spawn, args=(iface,)).start()
     Thread(target=iface.send_nymphes).start()

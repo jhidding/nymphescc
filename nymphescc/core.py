@@ -1,8 +1,9 @@
 # ~\~ language=Python filename=nymphescc/core.py
 # ~\~ begin <<lit/core.md|nymphescc/core.py>>[0]
 from dataclasses import dataclass
-import asyncio
+import logging
 from queue import Queue
+from threading import Event
 from .messages import read_settings, modulators, Setting, Group
 
 
@@ -32,24 +33,28 @@ class AlsaPort(Port):
                 self._port = alsa_client.create_port(name, READ_PORT, type=PortType.MIDI_GENERIC)
             case _:
                 raise ValueError(f"Unknown port caps '{caps}'")
-        print(self._port)
 
     def send_cc(self, channel, param, value):
-        print("out:", channel, param, value)
         alsa_client.event_output(
             ControlChangeEvent(channel, param, value),
             port=self._port)
         alsa_client.drain_output()
 
-    def read_cc(self):
+    def read_cc(self, quit_event: Event, timeout=0.1):
         port_id = self._port.get_info().port_id
         while True:
-            event = alsa_client.event_input()
+            event = alsa_client.event_input(timeout=timeout)
+            if event is None:
+                if quit_event.is_set():
+                    return
+                else:
+                    continue
             if event is not None and event.dest.port_id == port_id:
                 match event:
                     case ControlChangeEvent():
-                        print("inp:", event.channel, event.param, event.value)
                         yield event.channel, event.param, event.value
+                    case _:
+                        logging.debug("skipped MIDI event: %s", str(event))
 
 
 @dataclass
