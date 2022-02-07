@@ -56,6 +56,9 @@ class Interface:
 
     def read_nymphes(self):
         for chan, param, value in self.nymphes_in_port.read_cc(self.quit_event):
+            if param not in self.register.midi_map:
+                logging.warn("msg %u %u %u unknown", chan, param, value)
+                continue
             kind, ctrl = self.register.midi_map[param]
             logging.debug("msg %u %u %u, read as %s:%s", chan, param, value, kind, ctrl)
             if kind == "mod":
