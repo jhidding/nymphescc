@@ -2,6 +2,7 @@
 The GUI is using Gtk 4.0.
 
 ``` {.python file=nymphescc/gtk.py}
+import asyncio
 from queue import Queue
 from threading import Thread
 from importlib import resources
@@ -14,7 +15,51 @@ from dataclasses import dataclass
 
 
 from .messages import read_settings, Group, Setting, modulators
-from .core import Register
+from .core import Register, AlsaPort
+
+
+class Interface:
+    def __init__(self):
+        self.q_out = Queue()
+        self.set_ui_value = None
+        self.register = Register.new()
+        self.nymphes_in_port = AlsaPort("device-in", "in")
+        self.nymphes_out_port = AlsaPort("device-out", "out")
+        self.through_port = AlsaPort("through", "in")
+
+    def set_ui(self, ctrl, mod, value):
+        GLib.idle_add(self.set_ui_value, ctrl, mod, value)
+
+    def send_nymphes(self):
+        while True:
+            ctrl, mod, value = self.q_out.get()
+            if ctrl == "quit":
+                break
+
+            if mod is not None and mod != 0 and self.nymphes_out_port.selected_mod != mod:
+                self.nymphes_out_port.send_cc(
+                    0, self.register.flat_config["modulators.selector"].cc, mod - 1)
+                self.nymphes_out_port.selected_mod = mod
+            if mod is not None and mod > 0:
+                self.nymphes_out_port.send_cc(
+                    0, self.register.flat_config[ctrl].mod, value)
+            else:
+                self.nymphes_out_port.send_cc(
+                    0, self.register.flat_config[ctrl].cc, value)
+
+            self.q_out.task_done()
+
+    def read_nymphes(self):
+        for chan, param, value in self.nymphes_in_port.read_cc():
+            kind, ctrl = self.register.midi_map[param]
+            if kind == "mod":
+                self.register.values[self.nymphes_in_port.selected_mod][param] = value
+                self.set_ui(ctrl, self.nymphes_in_port.selected_mod, value)
+            elif ctrl == "modulators.selector":
+                self.nymphes_in_port.selected_mod = value + 1
+            else:
+                self.register.values[0][param] = value
+                self.set_ui(ctrl, 0, value)
 
 
 def slider_group(group: Group, on_changed):
@@ -114,15 +159,14 @@ def mode_selector(settings: dict[str, Group]):
                  , "misc.mode": list_box_play }
 
 
-def on_activate(app, qs):
-    q_in, q_out, register = qs
+def on_activate(app, iface):
     win = Gtk.ApplicationWindow(application=app, title="NymphesCC")
     css_provider = Gtk.CssProvider()
     with resources.path(__package__, "gtk-style.css") as path:
         css_provider.load_from_path(str(path))
     win.get_style_context().add_provider_for_display(
         Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
-    win.set_default_size(1500, 1000)
+    win.set_default_size(1600, 1000)
     header_bar = Gtk.HeaderBar()
     header_bar.set_show_title_buttons(True)
     side_bar_button = Gtk.Button()
@@ -131,27 +175,23 @@ def on_activate(app, qs):
     grid.add_css_class("mod-baseline")
     controls = {}
 
-    def set_ui_value(ctrl, value):
+    def set_ui_value(ctrl, mod, value):
+        if mod != controls["modulators.selector"].get_selected_row().get_index():
+            return
         match controls[ctrl]:
             case Gtk.Scale():
                 controls[ctrl].set_value(value)
             case Gtk.ComboBoxText():
                 controls[ctrl].set_active(value)
 
-    def read_input_queue():
-        while True:
-            ctrl, mod, value = q_in.get()
-            if ctrl == "quit":
-                return
-            GLib.idle_add(set_ui_value, ctrl, value)
-            q_in.task_done()
+    iface.set_ui_value = set_ui_value
 
     def write_output_queue(ctrl, value):
         mod = controls["modulators.selector"].get_selected_row().get_index()
-        if register.flat_config[ctrl].mod is None:
+        if iface.register.flat_config[ctrl].mod is None:
             mod = 0
-        register.gui_msg(ctrl, mod, value)
-        q_out.put_nowait((ctrl, mod, value))
+        if iface.register.gui_msg(ctrl, mod, value):
+            iface.q_out.put_nowait((ctrl, mod, value))
 
     def on_changed(widget, *args):
         match widget:
@@ -171,13 +211,13 @@ def on_activate(app, qs):
         css_classes = [re.sub("mod-.*", f"mod-{value}", c)
                        for c in grid.get_css_classes()]
         grid.set_css_classes(css_classes)
-        for name, setting in register.flat_config.items():
+        for name, setting in iface.register.flat_config.items():
             if setting.mod is not None:
                 widget = controls[name]
                 match widget:
                     case Gtk.Scale():
-                        widget.set_value(register.values[index][name])
-        q_out.put_nowait(("select-mod", None, row.get_index()))
+                        widget.set_value(iface.register.values[index][name])
+        iface.q_out.put_nowait(("modulators.selector", None, row.get_index()))
 
     settings = read_settings()
     layout = [("oscillator", 0, 0, 5, 1), 
@@ -223,37 +263,27 @@ def on_activate(app, qs):
     paned.set_start_child(side_box)
     paned.set_end_child(scrolled_main)
     paned.set_position(200)
-    win.set_child(paned)
 
-    Thread(target=read_input_queue).start()
+    win.set_child(paned)
     win.present()
 
 
-def spawn(q_in: Queue, q_out: Queue, register: Register):
+def spawn(iface: Interface):
     app = Gtk.Application(application_id='org.nymphescc')
 
     def stop_threads(_):
-        q_in.put_nowait(("quit", 0, 0))
-        q_out.put_nowait(("quit", 0, 0))
+        iface.q_out.put_nowait(("quit", 0, 0))
 
-    app.connect('activate', on_activate, (q_in, q_out, register))
+    app.connect('activate', on_activate, iface)
     app.connect('shutdown', stop_threads)
     app.run(None)
 
 
 def main():
-    q_in = Queue()
-    q_out = Queue()
-    register = Register.new()
+    iface = Interface()
+    # Thread(target=spawn, args=(iface,)).start()
+    Thread(target=iface.send_nymphes).start()
+    Thread(target=iface.read_nymphes).start()
+    spawn(iface)
 
-    def print_messages():
-        while True:
-            ctrl, mod, value = q_out.get()
-            if ctrl == "quit":
-                return
-            print(ctrl, mod, value)
-            q_out.task_done()
-
-    Thread(target=print_messages).start()
-    spawn(q_in, q_out, register)
 ```

@@ -151,7 +151,7 @@ The envelopes follow classic Attack/Decay/Sustain/Release pattern.
 ### Mix {.setting name=mix cc=47}
 
 ## Modulators {.group name=modulators}
-### Selector {.setting name=selector cc=5}
+### Selector {.setting name=selector cc=50}
 ``` {.values}
 { bounds = range 0 3, labels = Some ["LFO 2", "Mod Wheel", "Velocity", "Aftertouch"] }
 ```

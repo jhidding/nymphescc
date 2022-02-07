@@ -235,83 +235,408 @@ class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a hr
 <span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { grp.name: grp <span class="cf">for</span> grp <span class="kw">in</span> group_lst }</span>
 <span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
-<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(read_settings())</span></code></pre></div>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> modulators(settings):</span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>    labels <span class="op">=</span> settings[<span class="st">&quot;modulators&quot;</span>].content[<span class="dv">0</span>].labels</span>
+<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [<span class="st">&quot;Baseline&quot;</span>] <span class="op">+</span> labels</span>
+<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
+<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(read_settings())</span></code></pre></div>
 </div>
+</section>
+<section id="core-data-model" class="level1">
+<h1>Core data model</h1>
+<p>At the core we have a bank with known values for each Midi CC. The
+application should have an external MIDI In for 3rd party devices and a
+duplex connection with the Nymphes. Messages from MIDI In should be
+forwarded to the Nymphes, while messages from Nymphes should only affect
+the internal state of NymphesCC.</p>
 <div class="named-code-block">
-<p>file:nymphescc/main.py</p>
+<p>file:nymphescc/core.py</p>
 <div class="sourceCode" id="cb3"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> wx</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .messages <span class="im">import</span> Setting, Group, read_settings</span>
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncio</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> queue <span class="im">import</span> Queue</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .messages <span class="im">import</span> read_settings, modulators, Setting, Group</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingSlider(wx.BoxSizer):</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: Controller, setting: Setting):</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        wx.BoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.VERTICAL)</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> wx.StaticText(</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>            parent,</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span>setting.name.upper(),</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>            size<span class="op">=</span>(<span class="dv">50</span>, <span class="op">-</span><span class="dv">1</span>),</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.ALIGN_CENTRE <span class="op">|</span> wx.TEXT_ALIGNMENT_CENTER)</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        slider <span class="op">=</span> wx.Slider(</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>            parent,</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>            minValue<span class="op">=</span>setting.bounds.lower,</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>            maxValue<span class="op">=</span>setting.bounds.upper,</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>            value<span class="op">=</span><span class="dv">0</span>,</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.SL_VERTICAL <span class="op">|</span> wx.SL_VALUE_LABEL <span class="op">|</span> wx.SL_INVERSE,</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span>setting.name,</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>            size<span class="op">=</span>wx.Size(<span class="op">-</span><span class="dv">1</span>, <span class="dv">300</span>))</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> setting.description <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>            label.SetHelpText(setting.description)</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>            slider.SetHelpText(setting.description)</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>        box <span class="op">=</span> wx.BoxSizer()</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>        box.AddSpacer(<span class="dv">10</span>)</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        box.Add(label, wx.EXPAND)</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(box, wx.ALIGN_CENTER_HORIZONTAL)</span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingsGroup(wx.StaticBoxSizer):</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: wx.Window, name: <span class="bu">str</span>, group: Group):</span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        wx.StaticBoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.HORIZONTAL, parent, name)</span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> setting <span class="kw">in</span> group.content:</span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> setting.bounds.upper <span class="op">!=</span> <span class="dv">127</span>:</span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>            slider <span class="op">=</span> SettingSlider(parent, setting)</span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Controller(wx.Frame):</span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, settings: <span class="bu">dict</span>[<span class="bu">str</span>, Group]):</span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>        wx.Frame.<span class="fu">__init__</span>(<span class="va">self</span>, <span class="va">None</span>, title<span class="op">=</span><span class="st">&quot;NymphesCC&quot;</span>, size<span class="op">=</span>(<span class="dv">800</span>,<span class="dv">600</span>))</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.CreateStatusBar()</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>        vertical_stack <span class="op">=</span> wx.BoxSizer(wx.VERTICAL)</span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>        horiz1 <span class="op">=</span> wx.BoxSizer()</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>        horiz2 <span class="op">=</span> wx.BoxSizer()</span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>        groups1 <span class="op">=</span> [<span class="st">&quot;oscillator&quot;</span>, <span class="st">&quot;filter&quot;</span>]</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>        groups2 <span class="op">=</span> [<span class="st">&quot;envelope.filter&quot;</span>, <span class="st">&quot;envelope.amplitude&quot;</span>, <span class="st">&quot;lfo.lfo-1&quot;</span>, <span class="st">&quot;lfo.lfo-2&quot;</span>]</span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> select <span class="kw">in</span> groups1:</span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>            horiz1.AddSpacer(<span class="dv">5</span>)</span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>            horiz1.Add(SettingsGroup(<span class="va">self</span>, select, settings[select]))</span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>            horiz1.AddSpacer(<span class="dv">5</span>)</span>
-<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> select <span class="kw">in</span> groups2:</span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>            horiz2.AddSpacer(<span class="dv">5</span>)</span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>            horiz2.Add(SettingsGroup(<span class="va">self</span>, select, settings[select]))</span>
-<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>            horiz2.AddSpacer(<span class="dv">5</span>)</span>
-<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>        vertical_stack.Add(horiz1)</span>
-<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>        vertical_stack.Add(horiz2)</span>
-<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.SetSizer(vertical_stack) </span>
-<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Show(<span class="va">True</span>)</span>
-<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Port:</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    caps: <span class="bu">str</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    selected_mod: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="im">import</span> alsa_midi</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">ImportError</span>:</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    alsa_client <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    <span class="im">from</span> alsa_midi <span class="im">import</span> WRITE_PORT, READ_PORT, PortType, ControlChangeEvent</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    alsa_client <span class="op">=</span> alsa_midi.SequencerClient(<span class="st">&quot;NymphesCC&quot;</span>)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> AlsaPort(Port):</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, name, caps):</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>(name, caps)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">match</span> caps:</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>            <span class="cf">case</span> <span class="st">&quot;in&quot;</span>:</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>._port <span class="op">=</span> alsa_client.create_port(name, WRITE_PORT, <span class="bu">type</span><span class="op">=</span>PortType.MIDI_GENERIC)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>            <span class="cf">case</span> <span class="st">&quot;out&quot;</span>:</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>._port <span class="op">=</span> alsa_client.create_port(name, READ_PORT, <span class="bu">type</span><span class="op">=</span>PortType.MIDI_GENERIC)</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">case</span> _:</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>                <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="ss">f&quot;Unknown port caps &#39;</span><span class="sc">{</span>caps<span class="sc">}</span><span class="ss">&#39;&quot;</span>)</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="va">self</span>._port)</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> send_cc(<span class="va">self</span>, channel, param, value):</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">&quot;out:&quot;</span>, param, value)</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        alsa_client.event_output(</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>            ControlChangeEvent(channel, param, value),</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>            port<span class="op">=</span><span class="va">self</span>._port)</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>        alsa_client.drain_output()</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> read_cc(<span class="va">self</span>):</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>        port_id <span class="op">=</span> <span class="va">self</span>._port.get_info().port_id</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>            event <span class="op">=</span> alsa_client.event_input()</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> event <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> event.dest.port_id <span class="op">==</span> port_id:</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>                <span class="cf">match</span> event:</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">case</span> ControlChangeEvent():</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>                        <span class="bu">print</span>(<span class="st">&quot;inp:&quot;</span>, event.param, event.value)</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>                        <span class="cf">yield</span> event.channel, event.param, event.value</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Register:</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>    flat_config: <span class="bu">dict</span>[<span class="bu">str</span>, Setting]</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>    midi_map: <span class="bu">dict</span>[<span class="bu">int</span>, <span class="bu">tuple</span>[<span class="bu">str</span>, <span class="bu">str</span>]]</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>    values: <span class="bu">dict</span>[<span class="bu">int</span>, <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">int</span>]]</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>    ports: <span class="bu">dict</span>[<span class="bu">str</span>, Port] <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> gui_msg(<span class="va">self</span>, ctrl, mod, value):</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> value <span class="op">!=</span> <span class="va">self</span>.values[mod][ctrl]:</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.values[mod][ctrl] <span class="op">=</span> value</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">True</span></span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">False</span></span>
 <span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
-<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>    app <span class="op">=</span> wx.App(<span class="va">False</span>)</span>
-<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> read_settings()</span>
-<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>    frame <span class="op">=</span> Controller(settings)</span>
-<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>    app.MainLoop()</span></code></pre></div>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>    <span class="at">@staticmethod</span></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> new():</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>        config <span class="op">=</span> read_settings()</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>        flat_config <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>            { group.name <span class="op">+</span> <span class="st">&quot;.&quot;</span> <span class="op">+</span> setting.name: setting</span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>              <span class="cf">for</span> group <span class="kw">in</span> config.values()</span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>              <span class="cf">for</span> setting <span class="kw">in</span> group.content }</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>        midi_map_global <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>            { v.cc: (<span class="st">&quot;global&quot;</span>, k)</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>              <span class="cf">for</span> k, v <span class="kw">in</span> flat_config.items()</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>              <span class="cf">if</span> v.mod <span class="kw">is</span> <span class="va">None</span> }</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>        midi_map_baseline <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>            { v.cc: (<span class="st">&quot;baseline&quot;</span>, k)</span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>              <span class="cf">for</span> k, v <span class="kw">in</span> flat_config.items() </span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>              <span class="cf">if</span> v.mod }</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>        midi_map_mod <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>            { v.mod: (<span class="st">&quot;mod&quot;</span>, k)</span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>              <span class="cf">for</span> k, v <span class="kw">in</span> flat_config.items()</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>              <span class="cf">if</span> v.mod }</span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>        values <span class="op">=</span> { mod: { k: <span class="dv">0</span> <span class="cf">for</span> k <span class="kw">in</span> flat_config.keys() }</span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>                   <span class="cf">for</span> mod <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(modulators(config))) }</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> Register(</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>            flat_config,</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>            midi_map_global <span class="op">|</span> midi_map_baseline <span class="op">|</span> midi_map_mod,</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>            values)</span></code></pre></div>
+</div>
+</section>
+<section id="gui" class="level1">
+<h1>GUI</h1>
+<p>The GUI is using Gtk 4.0.</p>
+<div class="named-code-block">
+<p>file:nymphescc/gtk.py</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncio</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> queue <span class="im">import</span> Queue</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> threading <span class="im">import</span> Thread</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> importlib <span class="im">import</span> resources</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> gi</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>gi.require_version(<span class="st">&quot;Gtk&quot;</span>, <span class="st">&quot;4.0&quot;</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> gi.repository <span class="im">import</span> Gtk, GLib, Gdk</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .messages <span class="im">import</span> read_settings, Group, Setting, modulators</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .core <span class="im">import</span> Register, AlsaPort</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Interface:</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.q_out <span class="op">=</span> Queue()</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.set_ui_value <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.register <span class="op">=</span> Register.new()</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.nymphes_in_port <span class="op">=</span> AlsaPort(<span class="st">&quot;device-in&quot;</span>, <span class="st">&quot;in&quot;</span>)</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.nymphes_out_port <span class="op">=</span> AlsaPort(<span class="st">&quot;device-out&quot;</span>, <span class="st">&quot;out&quot;</span>)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.through_port <span class="op">=</span> AlsaPort(<span class="st">&quot;through&quot;</span>, <span class="st">&quot;in&quot;</span>)</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> set_ui(<span class="va">self</span>, ctrl, mod, value):</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>        GLib.idle_add(<span class="va">self</span>.set_ui_value, ctrl, mod, value)</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> send_nymphes(<span class="va">self</span>):</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>            ctrl, mod, value <span class="op">=</span> <span class="va">self</span>.q_out.get()</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> ctrl <span class="op">==</span> <span class="st">&quot;quit&quot;</span>:</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> mod <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> mod <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> <span class="va">self</span>.nymphes_out_port.selected_mod <span class="op">!=</span> mod:</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.nymphes_out_port.send_cc(</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>                    <span class="dv">1</span>, <span class="va">self</span>.register.flat_config[<span class="st">&quot;modulators.selector&quot;</span>].cc, mod <span class="op">-</span> <span class="dv">1</span>)</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.nymphes_out_port.selected_mod <span class="op">=</span> mod</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> mod <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> mod <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.nymphes_out_port.send_cc(</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>                    <span class="dv">1</span>, <span class="va">self</span>.register.flat_config[ctrl].mod, value)</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span>:</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.nymphes_out_port.send_cc(</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>                    <span class="dv">1</span>, <span class="va">self</span>.register.flat_config[ctrl].cc, value)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.q_out.task_done()</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> read_nymphes(<span class="va">self</span>):</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> chan, param, value <span class="kw">in</span> <span class="va">self</span>.nymphes_in_port.read_cc():</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>            kind, ctrl <span class="op">=</span> <span class="va">self</span>.register.midi_map[param]</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> kind <span class="op">==</span> <span class="st">&quot;mod&quot;</span>:</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.register.values[<span class="va">self</span>.nymhes_in_port.selected_mod][param] <span class="op">=</span> value</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.set_ui(ctrl, <span class="va">self</span>.nymhes_in_port.selected_mod, value)</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> ctrl <span class="op">==</span> <span class="st">&quot;modulators.selector&quot;</span>:</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.nymphes_in_port.selected_mod <span class="op">=</span> value <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span>:</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.register.values[<span class="dv">0</span>][param] <span class="op">=</span> value</span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.set_ui(ctrl, <span class="dv">0</span>, value)</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> slider_group(group: Group, on_changed):</span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>    sliders <span class="op">=</span> {}</span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>    combos <span class="op">=</span> {}</span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>    frame <span class="op">=</span> Gtk.Frame()</span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>    frame.set_label(group.<span class="bu">long</span>)</span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> Gtk.Grid()</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>    grid.set_column_spacing(<span class="dv">6</span>)</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_bottom(<span class="dv">5</span>)</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>    grid.set_column_homogeneous(<span class="va">True</span>)</span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a>    frame.set_child(grid)</span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, s <span class="kw">in</span> <span class="bu">enumerate</span>(group.scales):</span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a>        slider <span class="op">=</span> Gtk.Scale.new_with_range(Gtk.Orientation.VERTICAL, s.bounds.lower, s.bounds.upper, <span class="dv">1</span>)</span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a>        slider.set_vexpand(<span class="va">True</span>)</span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a>        slider.set_draw_value(<span class="va">True</span>)</span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a>        slider.set_inverted(<span class="va">True</span>)</span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>        slider.set_value_pos(Gtk.PositionType.BOTTOM)</span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> s.mod <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a>            slider.add_css_class(<span class="st">&quot;mod&quot;</span>)</span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a>        <span class="co"># if not s.tics:</span></span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a>        slider.add_mark(<span class="dv">0</span>, Gtk.PositionType.LEFT, <span class="va">None</span>)</span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a>        slider.add_mark(<span class="dv">63</span>, Gtk.PositionType.LEFT, <span class="va">None</span>)</span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a>        slider.add_mark(<span class="dv">127</span>, Gtk.PositionType.LEFT, <span class="va">None</span>)</span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a>        <span class="co"># else:</span></span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a>        <span class="co">#    for t in s.tics:</span></span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a>        <span class="co">#        slider.add_mark(t.value, Gtk.PositionType.LEFT, t.label)</span></span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> Gtk.Label()</span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a>        label.set_label(s.name.upper())</span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a>        grid.attach(slider, i, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a>        grid.attach(label, i, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a>        qname <span class="op">=</span> group.name <span class="op">+</span> <span class="st">&quot;.&quot;</span> <span class="op">+</span> s.name</span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a>        slider.<span class="ex">connect</span>(<span class="st">&quot;value-changed&quot;</span>, on_changed, qname)</span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a>        sliders[qname] <span class="op">=</span> slider</span>
+<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, s <span class="kw">in</span> <span class="bu">enumerate</span>(group.enums):</span>
+<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a>        combo <span class="op">=</span> Gtk.ComboBoxText()</span>
+<span id="cb4-99"><a href="#cb4-99" aria-hidden="true" tabindex="-1"></a>        combo.set_margin_end(<span class="dv">5</span>)</span>
+<span id="cb4-100"><a href="#cb4-100" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> t <span class="kw">in</span> s.labels:</span>
+<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a>            combo.append(<span class="va">None</span>, t)</span>
+<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> Gtk.Label.new(s.name.upper())</span>
+<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> i <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a>            combo.set_margin_top(<span class="dv">5</span>)</span>
+<span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a>        grid.attach(label, <span class="dv">0</span>, i<span class="op">+</span><span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-106"><a href="#cb4-106" aria-hidden="true" tabindex="-1"></a>        grid.attach(combo, <span class="dv">1</span>, i<span class="op">+</span><span class="dv">2</span>, <span class="bu">len</span>(group.scales) <span class="op">-</span> <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a>        qname <span class="op">=</span> group.name <span class="op">+</span> <span class="st">&quot;.&quot;</span> <span class="op">+</span> s.name</span>
+<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a>        combo.<span class="ex">connect</span>(<span class="st">&quot;changed&quot;</span>, on_changed, qname)</span>
+<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a>        combos[qname] <span class="op">=</span> combo</span>
+<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> frame, sliders <span class="op">|</span> combos</span>
+<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> list_box_label(name: <span class="bu">str</span>):</span>
+<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a>    label <span class="op">=</span> Gtk.Label()</span>
+<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a>    label.set_label(name)</span>
+<span id="cb4-117"><a href="#cb4-117" aria-hidden="true" tabindex="-1"></a>    label.set_margin_top(<span class="dv">5</span>)</span>
+<span id="cb4-118"><a href="#cb4-118" aria-hidden="true" tabindex="-1"></a>    label.set_margin_bottom(<span class="dv">5</span>)</span>
+<span id="cb4-119"><a href="#cb4-119" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> label</span>
+<span id="cb4-120"><a href="#cb4-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-121"><a href="#cb4-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-122"><a href="#cb4-122" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> list_box_setting(items: <span class="bu">list</span>[<span class="bu">str</span>]):</span>
+<span id="cb4-123"><a href="#cb4-123" aria-hidden="true" tabindex="-1"></a>    list_box <span class="op">=</span> Gtk.ListBox()</span>
+<span id="cb4-124"><a href="#cb4-124" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name <span class="kw">in</span> items:</span>
+<span id="cb4-125"><a href="#cb4-125" aria-hidden="true" tabindex="-1"></a>        list_box.append(list_box_label(name))</span>
+<span id="cb4-126"><a href="#cb4-126" aria-hidden="true" tabindex="-1"></a>    list_box.set_hexpand(<span class="va">True</span>)</span>
+<span id="cb4-127"><a href="#cb4-127" aria-hidden="true" tabindex="-1"></a>    list_box.set_selection_mode(Gtk.SelectionMode.BROWSE)</span>
+<span id="cb4-128"><a href="#cb4-128" aria-hidden="true" tabindex="-1"></a>    list_box.set_vexpand(<span class="va">True</span>)</span>
+<span id="cb4-129"><a href="#cb4-129" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> list_box</span>
+<span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mode_selector(settings: <span class="bu">dict</span>[<span class="bu">str</span>, Group]):</span>
+<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a>    vbox <span class="op">=</span> Gtk.Box.new(Gtk.Orientation.VERTICAL, <span class="dv">5</span>)</span>
+<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a>    mod_group <span class="op">=</span> settings[<span class="st">&quot;modulators&quot;</span>]</span>
+<span id="cb4-136"><a href="#cb4-136" aria-hidden="true" tabindex="-1"></a>    play_group <span class="op">=</span> settings[<span class="st">&quot;misc&quot;</span>]</span>
+<span id="cb4-137"><a href="#cb4-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-138"><a href="#cb4-138" aria-hidden="true" tabindex="-1"></a>    frame <span class="op">=</span> Gtk.Frame()</span>
+<span id="cb4-139"><a href="#cb4-139" aria-hidden="true" tabindex="-1"></a>    frame.set_label(mod_group.<span class="bu">long</span>)</span>
+<span id="cb4-140"><a href="#cb4-140" aria-hidden="true" tabindex="-1"></a>    setting <span class="op">=</span> mod_group.content[<span class="dv">0</span>]</span>
+<span id="cb4-141"><a href="#cb4-141" aria-hidden="true" tabindex="-1"></a>    list_box_mod <span class="op">=</span> list_box_setting(modulators(settings))</span>
+<span id="cb4-142"><a href="#cb4-142" aria-hidden="true" tabindex="-1"></a>    list_box_mod.select_row(list_box_mod.get_row_at_index(<span class="dv">0</span>))</span>
+<span id="cb4-143"><a href="#cb4-143" aria-hidden="true" tabindex="-1"></a>    list_box_mod.add_css_class(<span class="st">&quot;mod&quot;</span>)</span>
+<span id="cb4-144"><a href="#cb4-144" aria-hidden="true" tabindex="-1"></a>    frame.set_child(list_box_mod)</span>
+<span id="cb4-145"><a href="#cb4-145" aria-hidden="true" tabindex="-1"></a>    vbox.append(frame)</span>
+<span id="cb4-146"><a href="#cb4-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-147"><a href="#cb4-147" aria-hidden="true" tabindex="-1"></a>    frame <span class="op">=</span> Gtk.Frame()</span>
+<span id="cb4-148"><a href="#cb4-148" aria-hidden="true" tabindex="-1"></a>    setting <span class="op">=</span> <span class="bu">next</span>(s <span class="cf">for</span> s <span class="kw">in</span> play_group.content <span class="cf">if</span> s.name <span class="op">==</span> <span class="st">&quot;mode&quot;</span>)</span>
+<span id="cb4-149"><a href="#cb4-149" aria-hidden="true" tabindex="-1"></a>    frame.set_label(setting.<span class="bu">long</span>)</span>
+<span id="cb4-150"><a href="#cb4-150" aria-hidden="true" tabindex="-1"></a>    list_box_play <span class="op">=</span> list_box_setting(setting.labels)</span>
+<span id="cb4-151"><a href="#cb4-151" aria-hidden="true" tabindex="-1"></a>    frame.set_child(list_box_play)</span>
+<span id="cb4-152"><a href="#cb4-152" aria-hidden="true" tabindex="-1"></a>    vbox.append(frame)</span>
+<span id="cb4-153"><a href="#cb4-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-154"><a href="#cb4-154" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> vbox, { <span class="st">&quot;modulators.selector&quot;</span>: list_box_mod</span>
+<span id="cb4-155"><a href="#cb4-155" aria-hidden="true" tabindex="-1"></a>                 , <span class="st">&quot;misc.mode&quot;</span>: list_box_play }</span>
+<span id="cb4-156"><a href="#cb4-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-157"><a href="#cb4-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-158"><a href="#cb4-158" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> on_activate(app, iface):</span>
+<span id="cb4-159"><a href="#cb4-159" aria-hidden="true" tabindex="-1"></a>    win <span class="op">=</span> Gtk.ApplicationWindow(application<span class="op">=</span>app, title<span class="op">=</span><span class="st">&quot;NymphesCC&quot;</span>)</span>
+<span id="cb4-160"><a href="#cb4-160" aria-hidden="true" tabindex="-1"></a>    css_provider <span class="op">=</span> Gtk.CssProvider()</span>
+<span id="cb4-161"><a href="#cb4-161" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> resources.path(__package__, <span class="st">&quot;gtk-style.css&quot;</span>) <span class="im">as</span> path:</span>
+<span id="cb4-162"><a href="#cb4-162" aria-hidden="true" tabindex="-1"></a>        css_provider.load_from_path(<span class="bu">str</span>(path))</span>
+<span id="cb4-163"><a href="#cb4-163" aria-hidden="true" tabindex="-1"></a>    win.get_style_context().add_provider_for_display(</span>
+<span id="cb4-164"><a href="#cb4-164" aria-hidden="true" tabindex="-1"></a>        Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)</span>
+<span id="cb4-165"><a href="#cb4-165" aria-hidden="true" tabindex="-1"></a>    win.set_default_size(<span class="dv">1600</span>, <span class="dv">1000</span>)</span>
+<span id="cb4-166"><a href="#cb4-166" aria-hidden="true" tabindex="-1"></a>    header_bar <span class="op">=</span> Gtk.HeaderBar()</span>
+<span id="cb4-167"><a href="#cb4-167" aria-hidden="true" tabindex="-1"></a>    header_bar.set_show_title_buttons(<span class="va">True</span>)</span>
+<span id="cb4-168"><a href="#cb4-168" aria-hidden="true" tabindex="-1"></a>    side_bar_button <span class="op">=</span> Gtk.Button()</span>
+<span id="cb4-169"><a href="#cb4-169" aria-hidden="true" tabindex="-1"></a>    win.set_titlebar(header_bar)</span>
+<span id="cb4-170"><a href="#cb4-170" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> Gtk.Grid()</span>
+<span id="cb4-171"><a href="#cb4-171" aria-hidden="true" tabindex="-1"></a>    grid.add_css_class(<span class="st">&quot;mod-baseline&quot;</span>)</span>
+<span id="cb4-172"><a href="#cb4-172" aria-hidden="true" tabindex="-1"></a>    controls <span class="op">=</span> {}</span>
+<span id="cb4-173"><a href="#cb4-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-174"><a href="#cb4-174" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> set_ui_value(ctrl, mod, value):</span>
+<span id="cb4-175"><a href="#cb4-175" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> mod <span class="op">!=</span> controls[<span class="st">&quot;modulators.selector&quot;</span>].get_selected_row().get_index():</span>
+<span id="cb4-176"><a href="#cb4-176" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span></span>
+<span id="cb4-177"><a href="#cb4-177" aria-hidden="true" tabindex="-1"></a>        <span class="cf">match</span> controls[ctrl]:</span>
+<span id="cb4-178"><a href="#cb4-178" aria-hidden="true" tabindex="-1"></a>            <span class="cf">case</span> Gtk.Scale():</span>
+<span id="cb4-179"><a href="#cb4-179" aria-hidden="true" tabindex="-1"></a>                controls[ctrl].set_value(value)</span>
+<span id="cb4-180"><a href="#cb4-180" aria-hidden="true" tabindex="-1"></a>            <span class="cf">case</span> Gtk.ComboBoxText():</span>
+<span id="cb4-181"><a href="#cb4-181" aria-hidden="true" tabindex="-1"></a>                controls[ctrl].set_active(value)</span>
+<span id="cb4-182"><a href="#cb4-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-183"><a href="#cb4-183" aria-hidden="true" tabindex="-1"></a>    iface.set_ui_value <span class="op">=</span> set_ui_value</span>
+<span id="cb4-184"><a href="#cb4-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-185"><a href="#cb4-185" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> write_output_queue(ctrl, value):</span>
+<span id="cb4-186"><a href="#cb4-186" aria-hidden="true" tabindex="-1"></a>        mod <span class="op">=</span> controls[<span class="st">&quot;modulators.selector&quot;</span>].get_selected_row().get_index()</span>
+<span id="cb4-187"><a href="#cb4-187" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> iface.register.flat_config[ctrl].mod <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb4-188"><a href="#cb4-188" aria-hidden="true" tabindex="-1"></a>            mod <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb4-189"><a href="#cb4-189" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> iface.register.gui_msg(ctrl, mod, value):</span>
+<span id="cb4-190"><a href="#cb4-190" aria-hidden="true" tabindex="-1"></a>            iface.q_out.put_nowait((ctrl, mod, value))</span>
+<span id="cb4-191"><a href="#cb4-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-192"><a href="#cb4-192" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> on_changed(widget, <span class="op">*</span>args):</span>
+<span id="cb4-193"><a href="#cb4-193" aria-hidden="true" tabindex="-1"></a>        <span class="cf">match</span> widget:</span>
+<span id="cb4-194"><a href="#cb4-194" aria-hidden="true" tabindex="-1"></a>            <span class="cf">case</span> Gtk.ComboBoxText():</span>
+<span id="cb4-195"><a href="#cb4-195" aria-hidden="true" tabindex="-1"></a>                (ctrl,) <span class="op">=</span> args</span>
+<span id="cb4-196"><a href="#cb4-196" aria-hidden="true" tabindex="-1"></a>                write_output_queue(ctrl, widget.get_active())</span>
+<span id="cb4-197"><a href="#cb4-197" aria-hidden="true" tabindex="-1"></a>            <span class="cf">case</span> Gtk.Scale():</span>
+<span id="cb4-198"><a href="#cb4-198" aria-hidden="true" tabindex="-1"></a>                (ctrl,) <span class="op">=</span> args</span>
+<span id="cb4-199"><a href="#cb4-199" aria-hidden="true" tabindex="-1"></a>                write_output_queue(ctrl, <span class="bu">int</span>(widget.get_value()))</span>
+<span id="cb4-200"><a href="#cb4-200" aria-hidden="true" tabindex="-1"></a>            <span class="cf">case</span> Gtk.ListBox():</span>
+<span id="cb4-201"><a href="#cb4-201" aria-hidden="true" tabindex="-1"></a>                row, ctrl <span class="op">=</span> args</span>
+<span id="cb4-202"><a href="#cb4-202" aria-hidden="true" tabindex="-1"></a>                write_output_queue(ctrl, row.get_index())</span>
+<span id="cb4-203"><a href="#cb4-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-204"><a href="#cb4-204" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> on_mod_change(widget, row):</span>
+<span id="cb4-205"><a href="#cb4-205" aria-hidden="true" tabindex="-1"></a>        value <span class="op">=</span> row.get_child().get_label().lower().replace(<span class="st">&quot; &quot;</span>, <span class="st">&quot;-&quot;</span>)</span>
+<span id="cb4-206"><a href="#cb4-206" aria-hidden="true" tabindex="-1"></a>        index <span class="op">=</span> row.get_index()</span>
+<span id="cb4-207"><a href="#cb4-207" aria-hidden="true" tabindex="-1"></a>        css_classes <span class="op">=</span> [re.sub(<span class="st">&quot;mod-.*&quot;</span>, <span class="ss">f&quot;mod-</span><span class="sc">{</span>value<span class="sc">}</span><span class="ss">&quot;</span>, c)</span>
+<span id="cb4-208"><a href="#cb4-208" aria-hidden="true" tabindex="-1"></a>                       <span class="cf">for</span> c <span class="kw">in</span> grid.get_css_classes()]</span>
+<span id="cb4-209"><a href="#cb4-209" aria-hidden="true" tabindex="-1"></a>        grid.set_css_classes(css_classes)</span>
+<span id="cb4-210"><a href="#cb4-210" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> name, setting <span class="kw">in</span> iface.register.flat_config.items():</span>
+<span id="cb4-211"><a href="#cb4-211" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> setting.mod <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb4-212"><a href="#cb4-212" aria-hidden="true" tabindex="-1"></a>                widget <span class="op">=</span> controls[name]</span>
+<span id="cb4-213"><a href="#cb4-213" aria-hidden="true" tabindex="-1"></a>                <span class="cf">match</span> widget:</span>
+<span id="cb4-214"><a href="#cb4-214" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">case</span> Gtk.Scale():</span>
+<span id="cb4-215"><a href="#cb4-215" aria-hidden="true" tabindex="-1"></a>                        widget.set_value(iface.register.values[index][name])</span>
+<span id="cb4-216"><a href="#cb4-216" aria-hidden="true" tabindex="-1"></a>        iface.q_out.put_nowait((<span class="st">&quot;modulators.selector&quot;</span>, <span class="va">None</span>, row.get_index()))</span>
+<span id="cb4-217"><a href="#cb4-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-218"><a href="#cb4-218" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> read_settings()</span>
+<span id="cb4-219"><a href="#cb4-219" aria-hidden="true" tabindex="-1"></a>    layout <span class="op">=</span> [(<span class="st">&quot;oscillator&quot;</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">1</span>), </span>
+<span id="cb4-220"><a href="#cb4-220" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;filter&quot;</span>, <span class="dv">5</span>, <span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">1</span>),</span>
+<span id="cb4-221"><a href="#cb4-221" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;envelope.filter&quot;</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>),</span>
+<span id="cb4-222"><a href="#cb4-222" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;envelope.amplitude&quot;</span>, <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>),</span>
+<span id="cb4-223"><a href="#cb4-223" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;lfo.lfo-1&quot;</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>),</span>
+<span id="cb4-224"><a href="#cb4-224" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;lfo.lfo-2&quot;</span>, <span class="dv">6</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>),</span>
+<span id="cb4-225"><a href="#cb4-225" aria-hidden="true" tabindex="-1"></a>              (<span class="st">&quot;reverb&quot;</span>, <span class="dv">8</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>)]</span>
+<span id="cb4-226"><a href="#cb4-226" aria-hidden="true" tabindex="-1"></a>    grid.set_column_spacing(<span class="dv">5</span>)</span>
+<span id="cb4-227"><a href="#cb4-227" aria-hidden="true" tabindex="-1"></a>    grid.set_row_spacing(<span class="dv">5</span>)</span>
+<span id="cb4-228"><a href="#cb4-228" aria-hidden="true" tabindex="-1"></a>    grid.set_column_homogeneous(<span class="va">True</span>)</span>
+<span id="cb4-229"><a href="#cb4-229" aria-hidden="true" tabindex="-1"></a>    grid.set_row_homogeneous(<span class="va">True</span>)</span>
+<span id="cb4-230"><a href="#cb4-230" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-231"><a href="#cb4-231" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> s, x, y, w, h <span class="kw">in</span> layout:</span>
+<span id="cb4-232"><a href="#cb4-232" aria-hidden="true" tabindex="-1"></a>        frame, s_controls <span class="op">=</span> slider_group(settings[s], on_changed)</span>
+<span id="cb4-233"><a href="#cb4-233" aria-hidden="true" tabindex="-1"></a>        grid.attach(frame, x, y, w, h)</span>
+<span id="cb4-234"><a href="#cb4-234" aria-hidden="true" tabindex="-1"></a>        controls.update(s_controls)</span>
+<span id="cb4-235"><a href="#cb4-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-236"><a href="#cb4-236" aria-hidden="true" tabindex="-1"></a>    mode_box, mode_controls <span class="op">=</span> mode_selector(settings)</span>
+<span id="cb4-237"><a href="#cb4-237" aria-hidden="true" tabindex="-1"></a>    mode_controls[<span class="st">&quot;misc.mode&quot;</span>].<span class="ex">connect</span>(<span class="st">&quot;row-selected&quot;</span>, on_changed, <span class="st">&quot;misc.mode&quot;</span>)</span>
+<span id="cb4-238"><a href="#cb4-238" aria-hidden="true" tabindex="-1"></a>    mode_controls[<span class="st">&quot;modulators.selector&quot;</span>].<span class="ex">connect</span>(<span class="st">&quot;row-selected&quot;</span>, on_mod_change)</span>
+<span id="cb4-239"><a href="#cb4-239" aria-hidden="true" tabindex="-1"></a>    controls.update(mode_controls)</span>
+<span id="cb4-240"><a href="#cb4-240" aria-hidden="true" tabindex="-1"></a>    grid.attach(mode_box, <span class="dv">8</span>, <span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb4-241"><a href="#cb4-241" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_top(<span class="dv">5</span>)</span>
+<span id="cb4-242"><a href="#cb4-242" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_bottom(<span class="dv">5</span>)</span>
+<span id="cb4-243"><a href="#cb4-243" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_start(<span class="dv">5</span>)</span>
+<span id="cb4-244"><a href="#cb4-244" aria-hidden="true" tabindex="-1"></a>    grid.set_margin_end(<span class="dv">5</span>)</span>
+<span id="cb4-245"><a href="#cb4-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-246"><a href="#cb4-246" aria-hidden="true" tabindex="-1"></a>    side_box <span class="op">=</span> Gtk.Box.new(Gtk.Orientation.VERTICAL, <span class="dv">0</span>)</span>
+<span id="cb4-247"><a href="#cb4-247" aria-hidden="true" tabindex="-1"></a>    new_snapshot_button <span class="op">=</span> Gtk.Button()</span>
+<span id="cb4-248"><a href="#cb4-248" aria-hidden="true" tabindex="-1"></a>    new_snapshot_button.set_child(Gtk.Image.new_from_icon_name(<span class="st">&quot;value-increase-symbolic&quot;</span>))</span>
+<span id="cb4-249"><a href="#cb4-249" aria-hidden="true" tabindex="-1"></a>    session_tree_view <span class="op">=</span> Gtk.TreeView()</span>
+<span id="cb4-250"><a href="#cb4-250" aria-hidden="true" tabindex="-1"></a>    scrolled_side <span class="op">=</span> Gtk.ScrolledWindow()</span>
+<span id="cb4-251"><a href="#cb4-251" aria-hidden="true" tabindex="-1"></a>    scrolled_side.set_child(session_tree_view)</span>
+<span id="cb4-252"><a href="#cb4-252" aria-hidden="true" tabindex="-1"></a>    scrolled_side.set_vexpand(<span class="va">True</span>)</span>
+<span id="cb4-253"><a href="#cb4-253" aria-hidden="true" tabindex="-1"></a>    side_box.append(scrolled_side)</span>
+<span id="cb4-254"><a href="#cb4-254" aria-hidden="true" tabindex="-1"></a>    side_box.append(new_snapshot_button)</span>
+<span id="cb4-255"><a href="#cb4-255" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-256"><a href="#cb4-256" aria-hidden="true" tabindex="-1"></a>    scrolled_main <span class="op">=</span> Gtk.ScrolledWindow()</span>
+<span id="cb4-257"><a href="#cb4-257" aria-hidden="true" tabindex="-1"></a>    scrolled_main.set_child(grid)</span>
+<span id="cb4-258"><a href="#cb4-258" aria-hidden="true" tabindex="-1"></a>    paned <span class="op">=</span> Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)</span>
+<span id="cb4-259"><a href="#cb4-259" aria-hidden="true" tabindex="-1"></a>    paned.set_start_child(side_box)</span>
+<span id="cb4-260"><a href="#cb4-260" aria-hidden="true" tabindex="-1"></a>    paned.set_end_child(scrolled_main)</span>
+<span id="cb4-261"><a href="#cb4-261" aria-hidden="true" tabindex="-1"></a>    paned.set_position(<span class="dv">200</span>)</span>
+<span id="cb4-262"><a href="#cb4-262" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-263"><a href="#cb4-263" aria-hidden="true" tabindex="-1"></a>    win.set_child(paned)</span>
+<span id="cb4-264"><a href="#cb4-264" aria-hidden="true" tabindex="-1"></a>    win.present()</span>
+<span id="cb4-265"><a href="#cb4-265" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-266"><a href="#cb4-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-267"><a href="#cb4-267" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> spawn(iface: Interface):</span>
+<span id="cb4-268"><a href="#cb4-268" aria-hidden="true" tabindex="-1"></a>    app <span class="op">=</span> Gtk.Application(application_id<span class="op">=</span><span class="st">&#39;org.nymphescc&#39;</span>)</span>
+<span id="cb4-269"><a href="#cb4-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-270"><a href="#cb4-270" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> stop_threads(_):</span>
+<span id="cb4-271"><a href="#cb4-271" aria-hidden="true" tabindex="-1"></a>        iface.q_out.put_nowait((<span class="st">&quot;quit&quot;</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span>
+<span id="cb4-272"><a href="#cb4-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-273"><a href="#cb4-273" aria-hidden="true" tabindex="-1"></a>    app.<span class="ex">connect</span>(<span class="st">&#39;activate&#39;</span>, on_activate, iface)</span>
+<span id="cb4-274"><a href="#cb4-274" aria-hidden="true" tabindex="-1"></a>    app.<span class="ex">connect</span>(<span class="st">&#39;shutdown&#39;</span>, stop_threads)</span>
+<span id="cb4-275"><a href="#cb4-275" aria-hidden="true" tabindex="-1"></a>    app.run(<span class="va">None</span>)</span>
+<span id="cb4-276"><a href="#cb4-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-277"><a href="#cb4-277" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-278"><a href="#cb4-278" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
+<span id="cb4-279"><a href="#cb4-279" aria-hidden="true" tabindex="-1"></a>    iface <span class="op">=</span> Interface()</span>
+<span id="cb4-280"><a href="#cb4-280" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Thread(target=spawn, args=(iface,)).start()</span></span>
+<span id="cb4-281"><a href="#cb4-281" aria-hidden="true" tabindex="-1"></a>    Thread(target<span class="op">=</span>iface.send_nymphes).start()</span>
+<span id="cb4-282"><a href="#cb4-282" aria-hidden="true" tabindex="-1"></a>    Thread(target<span class="op">=</span>iface.read_nymphes).start()</span>
+<span id="cb4-283"><a href="#cb4-283" aria-hidden="true" tabindex="-1"></a>    spawn(iface)</span></code></pre></div>
 </div>
 </section>
 <section id="settings" class="level1 messages">
@@ -319,31 +644,31 @@ class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a hr
 <p>From the Nymphes manual we get a table with MIDI CC messages.</p>
 <div class="named-code-block">
 <p>«schema»</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode dhall"><code class="sourceCode dhall"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Range</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { lower <span class="fu">:</span> <span class="dt">Natural</span>, upper <span class="fu">:</span> <span class="dt">Natural</span> }</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> range <span class="fu">=</span> \(lower <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(upper <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    { lower <span class="fu">=</span> lower, upper <span class="fu">=</span> upper }</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Tic</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { value <span class="fu">:</span> <span class="dt">Natural</span>, label <span class="fu">:</span> <span class="dt">Text</span> }</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> tic <span class="fu">=</span> \(value <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(label <span class="fu">:</span> <span class="dt">Text</span>) <span class="ot">-&gt;</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    { value <span class="fu">=</span> value, label <span class="fu">=</span> label }</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Setting</span> <span class="fu">=</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">Type</span>    <span class="fu">=</span> { name <span class="fu">:</span> <span class="dt">Text</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                , long <span class="fu">:</span> <span class="dt">Text</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                , cc <span class="fu">:</span> <span class="dt">Natural</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                , bounds <span class="fu">:</span> <span class="dt">Range</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Text</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Natural</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Tic</span>) }</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    , default <span class="fu">=</span> { bounds <span class="fu">=</span> range <span class="dv">0</span> <span class="dv">127</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Text</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Natural</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Tic</span>) } }</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode dhall"><code class="sourceCode dhall"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Range</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { lower <span class="fu">:</span> <span class="dt">Natural</span>, upper <span class="fu">:</span> <span class="dt">Natural</span> }</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> range <span class="fu">=</span> \(lower <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(upper <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    { lower <span class="fu">=</span> lower, upper <span class="fu">=</span> upper }</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Tic</span> <span class="fu">:</span> <span class="dt">Type</span> <span class="fu">=</span> { value <span class="fu">:</span> <span class="dt">Natural</span>, label <span class="fu">:</span> <span class="dt">Text</span> }</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> tic <span class="fu">=</span> \(value <span class="fu">:</span> <span class="dt">Natural</span>) <span class="ot">-&gt;</span> \(label <span class="fu">:</span> <span class="dt">Text</span>) <span class="ot">-&gt;</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    { value <span class="fu">=</span> value, label <span class="fu">=</span> label }</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="dt">Setting</span> <span class="fu">=</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">Type</span>    <span class="fu">=</span> { name <span class="fu">:</span> <span class="dt">Text</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>                , long <span class="fu">:</span> <span class="dt">Text</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                , cc <span class="fu">:</span> <span class="dt">Natural</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>                , bounds <span class="fu">:</span> <span class="dt">Range</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Text</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">:</span> <span class="dt">Optional</span> <span class="dt">Natural</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">:</span> <span class="dt">Optional</span> (<span class="dt">List</span> <span class="dt">Tic</span>) }</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    , default <span class="fu">=</span> { bounds <span class="fu">=</span> range <span class="dv">0</span> <span class="dv">127</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>                , description <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Text</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>                , labels <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>                , mod <span class="fu">=</span> <span class="dt">None</span> <span class="dt">Natural</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>                , flags <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Text</span>)</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>                , tics <span class="fu">=</span> <span class="dt">None</span> (<span class="dt">List</span> <span class="dt">Tic</span>) } }</span></code></pre></div>
 </div>
 <p><img src="messages.dhall" class="figure" alt="" /></p>
 <section id="oscillator-control" class="level2 group" name="oscillator">
@@ -587,8 +912,8 @@ data-mod="84">
 <section id="modulators" class="level2 group" name="modulators">
 <h2 class="group" name="modulators">Modulators</h2>
 <section id="selector" class="level3 setting" name="selector"
-data-cc="5">
-<h3 class="setting" name="selector" data-cc="5">Selector</h3>
+data-cc="50">
+<h3 class="setting" name="selector" data-cc="50">Selector</h3>
 <pre class="values"><code>{ bounds = range 0 3, labels = Some [&quot;LFO 2&quot;, &quot;Mod Wheel&quot;, &quot;Velocity&quot;, &quot;Aftertouch&quot;] }</code></pre>
 </section>
 </section>
@@ -608,13 +933,99 @@ data-cc="5">
 </section>
 </section>
 </section>
+<section id="old-stuff" class="level1">
+<h1>Old stuff</h1>
+<p>Tried first with WxPython, but that library suffers from lack of
+documentation and ugly looking results (compared to the slickness of
+Gtk).</p>
+<div class="named-code-block">
+<p>file:nymphescc/wx.py</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> wx</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .messages <span class="im">import</span> Setting, Group, read_settings</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingSlider(wx.BoxSizer):</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: Controller, setting: Setting):</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>        wx.BoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.VERTICAL)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> wx.StaticText(</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>            parent,</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span>setting.name.upper(),</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>            size<span class="op">=</span>(<span class="dv">50</span>, <span class="op">-</span><span class="dv">1</span>),</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.ALIGN_CENTRE <span class="op">|</span> wx.TEXT_ALIGNMENT_CENTER)</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>        slider <span class="op">=</span> wx.Slider(</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>            parent,</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>            minValue<span class="op">=</span>setting.bounds.lower,</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>            maxValue<span class="op">=</span>setting.bounds.upper,</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>            value<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>            style<span class="op">=</span>wx.SL_VERTICAL <span class="op">|</span> wx.SL_VALUE_LABEL <span class="op">|</span> wx.SL_INVERSE,</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span>setting.name,</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>            size<span class="op">=</span>wx.Size(<span class="op">-</span><span class="dv">1</span>, <span class="dv">300</span>))</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> setting.description <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>            label.SetHelpText(setting.description)</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>            slider.SetHelpText(setting.description)</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>        box <span class="op">=</span> wx.BoxSizer()</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>        box.AddSpacer(<span class="dv">10</span>)</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>        box.Add(label, wx.EXPAND)</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Add(box, wx.ALIGN_CENTER_HORIZONTAL)</span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SettingsGroup(wx.StaticBoxSizer):</span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, parent: wx.Window, name: <span class="bu">str</span>, group: Group):</span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>        wx.StaticBoxSizer.<span class="fu">__init__</span>(<span class="va">self</span>, wx.HORIZONTAL, parent, name)</span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> setting <span class="kw">in</span> group.content:</span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> setting.bounds.upper <span class="op">!=</span> <span class="dv">127</span>:</span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a>            slider <span class="op">=</span> SettingSlider(parent, setting)</span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.Add(slider, wx.EXPAND)</span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Controller(wx.Frame):</span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, settings: <span class="bu">dict</span>[<span class="bu">str</span>, Group]):</span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a>        wx.Frame.<span class="fu">__init__</span>(<span class="va">self</span>, <span class="va">None</span>, title<span class="op">=</span><span class="st">&quot;NymphesCC&quot;</span>, size<span class="op">=</span>(<span class="dv">800</span>,<span class="dv">600</span>))</span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.CreateStatusBar()</span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a>        vertical_stack <span class="op">=</span> wx.BoxSizer(wx.VERTICAL)</span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a>        horiz1 <span class="op">=</span> wx.BoxSizer()</span>
+<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a>        horiz2 <span class="op">=</span> wx.BoxSizer()</span>
+<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a>        groups1 <span class="op">=</span> [<span class="st">&quot;oscillator&quot;</span>, <span class="st">&quot;filter&quot;</span>]</span>
+<span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a>        groups2 <span class="op">=</span> [<span class="st">&quot;envelope.filter&quot;</span>, <span class="st">&quot;envelope.amplitude&quot;</span>, <span class="st">&quot;lfo.lfo-1&quot;</span>, <span class="st">&quot;lfo.lfo-2&quot;</span>]</span>
+<span id="cb17-52"><a href="#cb17-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> select <span class="kw">in</span> groups1:</span>
+<span id="cb17-53"><a href="#cb17-53" aria-hidden="true" tabindex="-1"></a>            horiz1.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb17-54"><a href="#cb17-54" aria-hidden="true" tabindex="-1"></a>            horiz1.Add(SettingsGroup(<span class="va">self</span>, select, settings[select]))</span>
+<span id="cb17-55"><a href="#cb17-55" aria-hidden="true" tabindex="-1"></a>            horiz1.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb17-56"><a href="#cb17-56" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> select <span class="kw">in</span> groups2:</span>
+<span id="cb17-57"><a href="#cb17-57" aria-hidden="true" tabindex="-1"></a>            horiz2.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb17-58"><a href="#cb17-58" aria-hidden="true" tabindex="-1"></a>            horiz2.Add(SettingsGroup(<span class="va">self</span>, select, settings[select]))</span>
+<span id="cb17-59"><a href="#cb17-59" aria-hidden="true" tabindex="-1"></a>            horiz2.AddSpacer(<span class="dv">5</span>)</span>
+<span id="cb17-60"><a href="#cb17-60" aria-hidden="true" tabindex="-1"></a>        vertical_stack.Add(horiz1)</span>
+<span id="cb17-61"><a href="#cb17-61" aria-hidden="true" tabindex="-1"></a>        vertical_stack.Add(horiz2)</span>
+<span id="cb17-62"><a href="#cb17-62" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.SetSizer(vertical_stack) </span>
+<span id="cb17-63"><a href="#cb17-63" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Show(<span class="va">True</span>)</span>
+<span id="cb17-64"><a href="#cb17-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-65"><a href="#cb17-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-67"><a href="#cb17-67" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
+<span id="cb17-68"><a href="#cb17-68" aria-hidden="true" tabindex="-1"></a>    app <span class="op">=</span> wx.App(<span class="va">False</span>)</span>
+<span id="cb17-69"><a href="#cb17-69" aria-hidden="true" tabindex="-1"></a>    settings <span class="op">=</span> read_settings()</span>
+<span id="cb17-70"><a href="#cb17-70" aria-hidden="true" tabindex="-1"></a>    frame <span class="op">=</span> Controller(settings)</span>
+<span id="cb17-71"><a href="#cb17-71" aria-hidden="true" tabindex="-1"></a>    app.MainLoop()</span></code></pre></div>
+</div>
+</section>
         </div>
          <div class="col-3 col-s-3 menu" id="menu">
                 <nav id="TOC" role="doc-toc">
                                 <ul>
                                 <li><a href="#the-gui">The GUI</a></li>
+                                <li><a href="#core-data-model">Core data
+                                model</a></li>
+                                <li><a href="#gui">GUI</a></li>
                                 <li><a
                                 href="#settings">Settings</a></li>
+                                <li><a href="#old-stuff">Old
+                                stuff</a></li>
                                 </ul>
                 </nav>
         </div> 

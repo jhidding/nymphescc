@@ -18,37 +18,38 @@ try:
 except ImportError:
     alsa_client = None
 else:
-    from alsa_midi import PortCaps, PortType, ControlChangeEvent
-    alsa_client = alsa_midi.AsyncSequencerClient("NymphesCC")
+    from alsa_midi import WRITE_PORT, READ_PORT, PortType, ControlChangeEvent
+    alsa_client = alsa_midi.SequencerClient("NymphesCC")
 
 
 class AlsaPort(Port):
-    def __init__(self, name, caps="duplex"):
+    def __init__(self, name, caps):
         super().__init__(name, caps)
         match caps:
-            case "duplex":
-                self._port = alsa_client.create_port(name, PortCaps.DUPLEX)
             case "in":
-                self._port = alsa_client.create_port(name, PortCaps.READ)
+                self._port = alsa_client.create_port(name, WRITE_PORT, type=PortType.MIDI_GENERIC)
             case "out":
-                self._port = alsa_client.create_port(name, PortCaps.WRITE)
+                self._port = alsa_client.create_port(name, READ_PORT, type=PortType.MIDI_GENERIC)
+            case _:
+                raise ValueError(f"Unknown port caps '{caps}'")
+        print(self._port)
 
-    async def send_cc(self, channel, param, value):
-        await alsa_client.event_output(
+    def send_cc(self, channel, param, value):
+        print("out:", channel, param, value)
+        alsa_client.event_output(
             ControlChangeEvent(channel, param, value),
             port=self._port)
-        await alsa_client.drain_output()
+        alsa_client.drain_output()
 
-    async def read_cc(self):
+    def read_cc(self):
         port_id = self._port.get_info().port_id
         while True:
-            event = await alsa_client.event_input()
+            event = alsa_client.event_input()
             if event is not None and event.dest.port_id == port_id:
                 match event:
-                    case ControlChangeEvent(chan, param, value):
-                        yield chan, param, value
-
-
+                    case ControlChangeEvent():
+                        print("inp:", event.channel, event.param, event.value)
+                        yield event.channel, event.param, event.value
 
 
 @dataclass
@@ -59,7 +60,11 @@ class Register:
     ports: dict[str, Port] = None
 
     def gui_msg(self, ctrl, mod, value):
-        self.values[mod][ctrl] = value
+        if value != self.values[mod][ctrl]:
+            self.values[mod][ctrl] = value
+            return True
+        else:
+            return False
 
     @staticmethod
     def new():
