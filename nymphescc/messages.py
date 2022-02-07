@@ -1,5 +1,5 @@
 # ~\~ language=Python filename=nymphescc/messages.py
-# ~\~ begin <<README.md|nymphescc/messages.py>>[0]
+# ~\~ begin <<lit/core.md|nymphescc/messages.py>>[1]
 from __future__ import annotations
 from importlib import resources
 import dhall
