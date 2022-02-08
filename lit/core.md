@@ -47,7 +47,7 @@ try:
 except ImportError:
     alsa_client = None
 else:
-    from alsa_midi import WRITE_PORT, READ_PORT, PortType, ControlChangeEvent
+    from alsa_midi import WRITE_PORT, READ_PORT, PortCaps, PortType, ControlChangeEvent
     alsa_client = alsa_midi.SequencerClient("NymphesCC")
 
 
@@ -63,22 +63,23 @@ class AlsaPort(Port):
                 raise ValueError(f"Unknown port caps '{caps}'")
 
     def auto_connect(self):
-        if self.caps == "in":
-            ports = alsa_client.list_ports(input=True)
-            try:
+        try:
+            if self.caps == "out":
+                ports = alsa_client.list_ports(output=True)
                 target = next(p for p in ports if p.client_name == "Nymphes")
-            except StopIteration:
-                logging.warn("Could not auto-connect to Nymphes.")
-            else:
-                self._port.connect_from(target)
-        if self.caps == "out":
-            ports = alsa_client.list_ports(output=True)
-            try:
-                target = next(p for p in ports if p.client_name == "Nymphes")
-            except StopIteration:
-                logging.warn("Could not auto-connect to Nymphes.")
-            else:
                 self._port.connect_to(target)
+            if self.caps == "in":
+                ports = alsa_client.list_ports(input=True)
+                target = next(p for p in ports if p.client_name == "Nymphes")
+                self._port.connect_from(target)
+        except StopIteration:
+            logging.warn("Nymphes device not found")
+            return
+        except alsa_midi.ALSAError as e:
+            logging.error(e)
+            return
+
+        logging.debug("connected to: %s", str(target))
 
     def send_cc(self, channel, param, value):
         alsa_client.event_output(
@@ -130,7 +131,7 @@ class Register:
               if v.mod is None }
         midi_map_baseline = \
             { v.cc: ("baseline", k)
-              for k, v in flat_config.items() 
+              for k, v in flat_config.items()
               if v.mod }
         midi_map_mod = \
             { v.mod: ("mod", k)

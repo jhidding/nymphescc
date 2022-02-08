@@ -10,6 +10,7 @@ from threading import Thread
 from importlib import resources
 import re
 from datetime import datetime
+from collections import OrderedDict
 
 from xdg import xdg_config_home
 import gi
@@ -35,7 +36,7 @@ class Interface:
         self.db = NymphesDB()
 
         self.nymphes_in_port.auto_connect()
-        self.nymphes_in_port.auto_connect()
+        self.nymphes_out_port.auto_connect()
 
     def set_ui(self, ctrl, mod, value):
         GLib.idle_add(self.set_ui_value, ctrl, mod, value)
@@ -187,6 +188,21 @@ def mode_selector(settings: dict[str, Group]):
                  , "misc.mode": list_box_play }
 
 
+def icon_button(icon_name: str) -> Gtk.Button:
+    button = Gtk.Button()
+    button.set_icon_name(icon_name)
+    return button
+
+
+def tool_bar(**icon_names) -> tuple[Gtk.Box, dict[str, Gtk.Button]]:
+    box = Gtk.Box()
+    buttons = OrderedDict((k, icon_button(v)) for k, v in icon_names.items())
+    for button in buttons.values():
+        button.set_has_frame(False)
+        box.append(button)
+    return box, buttons
+
+
 def on_activate(app, iface):
     win = Gtk.ApplicationWindow(application=app, title="NymphesCC")
     css_provider = Gtk.CssProvider()
@@ -289,15 +305,11 @@ def on_activate(app, iface):
             set_ui_value(ctrl, mod, value)
 
     side_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
-    new_snapshot_button = Gtk.Button()
-    new_snapshot_button.set_child(Gtk.Image.new_from_icon_name("value-increase-symbolic"))
     tree_store = make_tree_store(iface.db)
     db_tree_view = Gtk.TreeView.new_with_model(tree_store)
     db_col_1 = Gtk.TreeViewColumn()
     db_cell_1 = Gtk.CellRendererText()
-    db_cell_1.set_property("editable", True)
     db_cell_2 = Gtk.CellRendererText()
-    db_cell_2.set_property("editable", True)
     db_col_1.set_title("Name")
     db_col_1.pack_start(db_cell_1, True)
     db_col_1.add_attribute(db_cell_1, "text", 1)
@@ -313,8 +325,14 @@ def on_activate(app, iface):
     scrolled_side = Gtk.ScrolledWindow()
     scrolled_side.set_child(db_tree_view)
     scrolled_side.set_vexpand(True)
+
+    db_tool_bar, db_tool_buttons = tool_bar(
+        new_group="folder-new-symbolic",
+        new_snapshot="list-add-symbolic",
+        delete="edit-delete-symbolic")
+
+    side_box.append(db_tool_bar)
     side_box.append(scrolled_side)
-    side_box.append(new_snapshot_button)
 
     scrolled_main = Gtk.ScrolledWindow()
     scrolled_main.set_child(grid)
