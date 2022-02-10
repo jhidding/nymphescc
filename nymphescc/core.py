@@ -8,25 +8,21 @@ from threading import Event
 from .messages import read_settings, modulators, Setting, Group
 import mido
 import io
+from typing import AsyncIterator, Protocol
 
 
-@dataclass
-class Port:
-    name: str
-    caps: str
-    selected_mod: int = 0
-
-    @abstractmethod
-    def send_cc(self, channel, param, value):
-        pass
-
-
-class BytesPort(Port):
-    def __init__(self, name, caps, buffer=b""):
-        super().__init__(name, caps)
+class BytesPort:
+    def __init__(self, buffer=b""):
+        self.selected_mod = 0
         self._file = io.BytesIO(buffer)
 
-    def send_cc(self, channel, param, value):
+    def is_input_port(self) -> bool:
+        return True
+
+    def is_output_port(self) -> bool:
+        return True
+
+    def send_cc(self, channel: int, param: int, value: int):
         msg = mido.Message("control_change", channel=channel, param=param, value=value)
         self._file.write(msg.bin())
 
@@ -34,40 +30,37 @@ class BytesPort(Port):
     def bytes(self):
         return self._file.getbuffer()
 
-    def read_cc(self):
+    async def read_cc(self) -> AsyncIterator[tuple[int, int, int]]:
         for msg in mido.Parser().feed(self.bytes):
             if msg.is_cc():
                 yield msg.channel, msg.param, msg.value
 
 
-try:
-    import alsa_midi
-except ImportError:
-    alsa_client = None
-else:
-    from alsa_midi import WRITE_PORT, READ_PORT, PortCaps, PortType, ControlChangeEvent
-    alsa_client = alsa_midi.SequencerClient("NymphesCC")
+import alsa_midi
+from alsa_midi import WRITE_PORT, READ_PORT, PortCaps, PortType, ControlChangeEvent
 
 
-class AlsaPort(Port):
-    def __init__(self, name, caps):
-        super().__init__(name, caps)
+class AlsaPort:
+    def __init__(self, client, name, caps):
+        self.caps = caps
+        self.selected_mod = 0
+        self._client = client
         match caps:
             case "in":
-                self._port = alsa_client.create_port(name, WRITE_PORT, type=PortType.MIDI_GENERIC)
+                self._port = self._client.create_port(name, WRITE_PORT, type=PortType.MIDI_GENERIC)
             case "out":
-                self._port = alsa_client.create_port(name, READ_PORT, type=PortType.MIDI_GENERIC)
+                self._port = self._client.create_port(name, READ_PORT, type=PortType.MIDI_GENERIC)
             case _:
                 raise ValueError(f"Unknown port caps '{caps}'")
 
     def auto_connect(self):
         try:
             if self.caps == "out":
-                ports = alsa_client.list_ports(output=True)
+                ports = self._client.list_ports(output=True)
                 target = next(p for p in ports if p.client_name == "Nymphes")
                 self._port.connect_to(target)
             if self.caps == "in":
-                ports = alsa_client.list_ports(input=True)
+                ports = self._client.list_ports(input=True)
                 target = next(p for p in ports if p.client_name == "Nymphes")
                 self._port.connect_from(target)
         except StopIteration:
@@ -79,27 +72,26 @@ class AlsaPort(Port):
 
         logging.debug("connected to: %s", str(target))
 
-    def send_cc(self, channel, param, value):
-        alsa_client.event_output(
+    def send_cc(self, channel: int, param: int, value: int):
+        self._client.event_output(
             ControlChangeEvent(channel, param, value),
             port=self._port)
-        alsa_client.drain_output()
+        self._client.drain_output()
 
     def read_cc(self, quit_event: Event, timeout=0.1):
         port_id = self._port.get_info().port_id
         while True:
-            event = alsa_client.event_input(timeout=timeout)
+            event = self._client.event_input(timeout=timeout)
             if event is None:
                 if quit_event.is_set():
                     return
                 else:
                     continue
             if event is not None and event.dest.port_id == port_id:
-                match event:
-                    case ControlChangeEvent():
-                        yield event.channel, event.param, event.value
-                    case _:
-                        logging.debug("skipped MIDI event: %s", str(event))
+                if isinstance(event, ControlChangeEvent):
+                    yield event.channel, event.param, event.value
+                else:
+                    logging.debug("skipped MIDI event: %s", str(event))
 
 
 @dataclass
@@ -107,7 +99,6 @@ class Register:
     flat_config: dict[str, Setting]
     midi_map: dict[int, tuple[str, str]]
     values: dict[int, dict[str, int]]
-    ports: dict[str, Port] = None
 
     def gui_msg(self, ctrl, mod, value):
         if value != self.values[mod][ctrl]:

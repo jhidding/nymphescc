@@ -5,6 +5,7 @@ The GUI is using Gtk 4.0.
 import logging
 import queue
 from queue import Queue
+from telnetlib import SE
 import threading
 from threading import Thread
 from importlib import resources
@@ -18,7 +19,7 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, GLib, Gdk
 from dataclasses import dataclass
 
-
+from alsa_midi import SequencerClient
 from .messages import read_settings, Group, Setting, modulators
 from .core import Register, AlsaPort
 from .db import NymphesDB
@@ -29,9 +30,10 @@ class Interface:
         self.q_out = Queue()
         self.set_ui_value = None
         self.register = Register.new()
-        self.nymphes_in_port = AlsaPort("device-in", "in")
-        self.nymphes_out_port = AlsaPort("device-out", "out")
-        self.through_port = AlsaPort("through", "in")
+        client = SequencerClient("NymphesCC")
+        self.nymphes_in_port = AlsaPort(client, "device-in", "in")
+        self.nymphes_out_port = AlsaPort(client, "device-out", "out")
+        self.through_port = AlsaPort(client, "through", "in")
         self.quit_event = threading.Event()
         self.db = NymphesDB()
 
@@ -79,16 +81,6 @@ class Interface:
             else:
                 self.register.values[0][ctrl] = value
                 self.set_ui(ctrl, 0, value)
-
-
-def make_tree_store(db: NymphesDB):
-    store = Gtk.TreeStore(int, str, str, str)   # name, tag-list, date
-    tree = db.tree()
-    for grp_id, grp_name, snaps in tree:
-        grp = store.append(None, (grp_id, grp_name, None, None))
-        for snap_id, name, tags, date in snaps:
-            store.append(grp, (snap_id, name, tags, date))
-    return store
 
 
 def slider_group(group: Group, on_changed):
@@ -180,7 +172,7 @@ def mode_selector(settings: dict[str, Group]):
     frame = Gtk.Frame()
     setting = next(s for s in play_group.content if s.name == "mode")
     frame.set_label(setting.long)
-    list_box_play = list_box_setting(setting.labels)
+    list_box_play = list_box_setting(setting.labels or [])
     frame.set_child(list_box_play)
     vbox.append(frame)
 
@@ -305,8 +297,8 @@ def on_activate(app, iface):
             set_ui_value(ctrl, mod, value)
 
     side_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
-    tree_store = make_tree_store(iface.db)
-    db_tree_view = Gtk.TreeView.new_with_model(tree_store)
+    # tree_store = make_tree_store(iface.db)
+    db_tree_view = Gtk.TreeView()
     db_col_1 = Gtk.TreeViewColumn()
     db_cell_1 = Gtk.CellRendererText()
     db_cell_2 = Gtk.CellRendererText()
