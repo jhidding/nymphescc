@@ -193,6 +193,24 @@ def tool_bar(**icon_names) -> tuple[Gtk.Box, dict[str, Gtk.Button]]:
     return box, buttons
 
 
+def session_pane(iface):
+    search_bar = Gtk.SearchEntry()
+
+    session_overlay = Gtk.Overlay()
+    session_list = Gtk.ListBox()
+    session_overlay.set_child(session_list)
+    session_ctrl = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
+    session_ctrl.append(search_bar)
+    session_ctrl.append(session_overlay)
+
+    ...    
+
+    vpaned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
+    vpaned.set_start_child(session_ctrl)
+    vpaned.set_end_child(session_info)
+    return vpaned
+
+
 def on_activate(app, iface):
     win = Gtk.ApplicationWindow(application=app, title="NymphesCC")
     css_provider = Gtk.CssProvider()

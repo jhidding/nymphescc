@@ -113,7 +113,7 @@ ports = ["python-rtmidi (>=1.1.0)"]
 
 [[package]]
 name = "mypy"
-version = "0.940+dev.872c03da11b7e8a11c724e337577b2233573b3b3"
+version = "0.940+dev.129dba468c235fbdc01f608736554061368bcff3"
 description = "Optional static typing for Python"
 category = "dev"
 optional = false
@@ -134,7 +134,7 @@ reports = ["lxml"]
 type = "git"
 url = "https://github.com/python/mypy.git"
 reference = "master"
-resolved_reference = "872c03da11b7e8a11c724e337577b2233573b3b3"
+resolved_reference = "129dba468c235fbdc01f608736554061368bcff3"
 
 [[package]]
 name = "mypy-extensions"

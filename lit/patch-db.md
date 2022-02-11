@@ -16,13 +16,13 @@ create table if not exists "snapshots"
     , "group" integer not null
        references "groups" ("id") on delete cascade
     , "date" text default current_timestamp
-    , "midi" blob not null );
+    , "midi" blob not null
+    , "tags" text );
 
 create table if not exists "groups"
     ( "id" integer primary key autoincrement
     , "name" text not null
-    , "description" text
-    , "tags" text );
+    , "description" text );
 """
 
 
@@ -30,6 +30,7 @@ create table if not exists "groups"
 class Snapshot:
     key: int
     date: datetime
+    tags: Optional[str]
     midi: bytes
 
 
@@ -37,8 +38,7 @@ class Snapshot:
 class Group:
     key: int
     name: str
-    description: str
-    tags: list[str]
+    description: Optional[str]
     snapshots: list[Snapshot]
 
 
@@ -52,39 +52,39 @@ class NymphesDB:
         self._cursor.executescript(db_schema)
         self._connection.commit()
 
-    def new_group(self, name: str, description: str, tags: list[str]) -> int:
+    def new_group(self, name: str, description: Optional[str]) -> int:
         self._cursor.execute("""
-            insert into "groups" ("name", "description", "tags")
-            values (?, ?, ?)""", (name, description, ",".join(tags)))
+            insert into "groups" ("name", "description")
+            values (?, ?)""", (name, description))
         self._connection.commit()
         return self._cursor.lastrowid
 
-    def new_snapshot(self, group_id: int, midi: bytes) -> int:
+    def new_snapshot(self, group_id: int, midi: bytes, tags: Optional[str] = None) -> int:
         self._cursor.execute("""
-            insert into "snapshots" ("group", "midi")
-            values (?, ?)""", (group_id, midi))
+            insert into "snapshots" ("group", "midi", "tags")
+            values (?, ?, ?)""", (group_id, midi, tags))
         self._connection.commit()
         return self._cursor.lastrowid
 
     def group(self, group_id: int) -> list[Snapshot]:
         members = self._cursor.execute("""
-            select "id", "date", "midi" from "snapshots"
+            select "id", "date", "midi", "tags" from "snapshots"
             where "group" is ?""", (group_id,))
-        return [Snapshot(key, datetime.fromisoformat(date), midi)
-                for key, date, midi in members.fetchall()]
+        return [Snapshot(key, datetime.fromisoformat(date), tags, midi)
+                for key, date, midi, tags in members.fetchall()]
 
     def snapshot(self, snap_id: int) -> Snapshot:
-        key, date, midi = self._cursor.execute("""
-            select "id", "date", "midi" from "snapshots"
+        key, date, midi, tags = self._cursor.execute("""
+            select "id", "date", "midi", "tags" from "snapshots"
             where "id" is ?""", (snap_id,)).fetchone()
-        return Snapshot(key, datetime.fromisoformat(date), midi)
+        return Snapshot(key, datetime.fromisoformat(date), tags, midi)
 
     def tree(self) -> list[Group]:
         groups = self._cursor.execute("""
             select * from "groups"
             """).fetchall()
-        return [Group(key, name, description, tags.split(","), self.group(key))
-                for key, name, description, tags in groups]
+        return [Group(key, name, description, self.group(key))
+                for key, name, description in groups]
 
     def close(self):
         self._connection.close()
@@ -93,7 +93,7 @@ class NymphesDB:
 def test_db(tmp_path: Path):
     from datetime import timedelta, datetime
     db = NymphesDB(tmp_path / "test.db")
-    group_id = db.new_group("hello", "test 123", ["42"])
+    group_id = db.new_group("hello", "test 123")
     assert isinstance(group_id, int)
     snap_id = db.new_snapshot(group_id, b"123")
     assert isinstance(snap_id, int)
