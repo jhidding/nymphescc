@@ -1,3 +1,7 @@
+#session-title text {
+    font-weight: bold;
+}
+
 .mod-lfo-2 scale.mod trough highlight, .mod-lfo-2 list.mod row:selected {
     background-color: #cc0000;
     border-color: #cc0000;

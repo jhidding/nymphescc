@@ -200,16 +200,62 @@ def session_pane(iface):
 
     session_overlay = Gtk.Overlay()
     session_list = Gtk.ListBox()
-    session_overlay.set_child(session_list)
-    session_ctrl = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
-    session_ctrl.append(search_bar)
-    session_ctrl.append(session_overlay)
+    list_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 5)
+    list_box.append(session_list)
+    list_box.append(list_box_label(""))
+    for i in range(10):
+        session_list.append(list_box_label("hello"))
+        session_list.append(list_box_label("world"))
+    # session_list.set_vexpand(True)
+    scroll = Gtk.ScrolledWindow()
+    scroll.set_child(list_box)
+    scroll.set_vexpand(True)
+    session_overlay.set_child(scroll)
 
-    ...    
+    ctrl = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
+    ctrl.append(search_bar)
+    ctrl.append(session_overlay)
+
+    new_group_button = icon_button("list-add-symbolic")
+    session_overlay.add_overlay(new_group_button)
+    new_group_button.set_property("halign", Gtk.Align.CENTER)
+    new_group_button.set_property("valign", Gtk.Align.END)
+    new_group_button.set_margin_bottom(5)
+    session_list.set_margin_bottom(new_group_button.get_height() + 10)
+
+    info = Gtk.Box.new(Gtk.Orientation.VERTICAL, 5)
+    info.set_margin_start(5)
+    info.set_margin_end(5)
+    info.set_margin_top(5)
+    info.set_margin_bottom(5)
+    title = Gtk.Entry()
+    title.set_name("session-title")
+    title.set_has_frame(False)
+    info.append(title)
+
+    descr_frame = Gtk.Frame()
+    descr_frame.set_label("Description")
+    descr_scroll = Gtk.ScrolledWindow()
+    descr = Gtk.TextView()
+    descr.set_wrap_mode(Gtk.WrapMode.WORD)
+    descr_scroll.set_child(descr)
+    descr_scroll.set_size_request(-1, 100)
+    descr_frame.set_child(descr_scroll)
+    info.append(descr_frame)
+
+    snaps_frame = Gtk.Frame()
+    snaps_frame.set_label("Snapshots")
+    snaps_scroll = Gtk.ScrolledWindow()
+    snaps = Gtk.ListBox()
+    snaps_scroll.set_child(snaps)
+    snaps_frame.set_child(snaps_scroll)
+    snaps_frame.set_vexpand(True)
+    info.append(snaps_frame)
 
     vpaned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
-    vpaned.set_start_child(session_ctrl)
-    vpaned.set_end_child(session_info)
+    vpaned.set_start_child(ctrl)
+    vpaned.set_end_child(info)
+    vpaned.set_position(500)
     return vpaned
 
 
@@ -314,40 +360,12 @@ def on_activate(app, iface):
         for ctrl, value in v.items():
             set_ui_value(ctrl, mod, value)
 
-    side_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
-    # tree_store = make_tree_store(iface.db)
-    db_tree_view = Gtk.TreeView()
-    db_col_1 = Gtk.TreeViewColumn()
-    db_cell_1 = Gtk.CellRendererText()
-    db_cell_2 = Gtk.CellRendererText()
-    db_col_1.set_title("Name")
-    db_col_1.pack_start(db_cell_1, True)
-    db_col_1.add_attribute(db_cell_1, "text", 1)
-    db_col_2 = Gtk.TreeViewColumn()
-    db_col_2.set_title("Tags")
-    db_col_2.pack_start(db_cell_2, True)
-    db_col_2.add_attribute(db_cell_2, "text", 2)
-
-    db_tree_view.append_column(db_col_1)
-    db_tree_view.append_column(db_col_2)
-    db_tree_view.set_vexpand(True)
-
-    scrolled_side = Gtk.ScrolledWindow()
-    scrolled_side.set_child(db_tree_view)
-    scrolled_side.set_vexpand(True)
-
-    db_tool_bar, db_tool_buttons = tool_bar(
-        new_group="folder-new-symbolic",
-        new_snapshot="list-add-symbolic",
-        delete="edit-delete-symbolic")
-
-    side_box.append(db_tool_bar)
-    side_box.append(scrolled_side)
+    side = session_pane(iface)
 
     scrolled_main = Gtk.ScrolledWindow()
     scrolled_main.set_child(grid)
     paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
-    paned.set_start_child(side_box)
+    paned.set_start_child(side)
     paned.set_end_child(scrolled_main)
     paned.set_position(200)
 
