@@ -2,15 +2,13 @@
 At the core we have a bank with known values for each Midi CC. The application should have an external MIDI In for 3rd party devices and a duplex connection with the Nymphes. Messages from MIDI In should be forwarded to the Nymphes, while messages from Nymphes should only affect the internal state of NymphesCC.
 
 ``` {.python file=nymphescc/core.py}
-from abc import abstractmethod
 from dataclasses import dataclass
 import logging
-from queue import Queue
 from threading import Event
 from .messages import read_settings, modulators, Setting, Group
 import mido
 import io
-from typing import AsyncIterator, Protocol
+from typing import Iterator, Protocol
 
 
 class BytesPort:
@@ -32,7 +30,7 @@ class BytesPort:
     def bytes(self):
         return self._file.getbuffer()
 
-    async def read_cc(self) -> AsyncIterator[tuple[int, int, int]]:
+    def read_cc(self, _) -> Iterator[tuple[int, int, int]]:
         for msg in mido.Parser().feed(self.bytes):
             if msg.is_cc():
                 yield msg.channel, msg.param, msg.value

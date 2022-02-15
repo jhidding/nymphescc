@@ -1,14 +1,12 @@
 # ~\~ language=Python filename=nymphescc/core.py
 # ~\~ begin <<lit/core.md|nymphescc/core.py>>[0]
-from abc import abstractmethod
 from dataclasses import dataclass
 import logging
-from queue import Queue
 from threading import Event
 from .messages import read_settings, modulators, Setting, Group
 import mido
 import io
-from typing import AsyncIterator, Protocol
+from typing import Iterator, Protocol
 
 
 class BytesPort:
@@ -30,7 +28,7 @@ class BytesPort:
     def bytes(self):
         return self._file.getbuffer()
 
-    async def read_cc(self) -> AsyncIterator[tuple[int, int, int]]:
+    def read_cc(self, _) -> Iterator[tuple[int, int, int]]:
         for msg in mido.Parser().feed(self.bytes):
             if msg.is_cc():
                 yield msg.channel, msg.param, msg.value

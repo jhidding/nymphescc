@@ -5,23 +5,19 @@ The GUI is using Gtk 4.0.
 import logging
 import queue
 from queue import Queue
-from telnetlib import SE
 import threading
 from threading import Thread
 from importlib import resources
 import re
-from datetime import datetime
 from collections import OrderedDict
 
-from xdg import xdg_config_home
 import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, GLib, Gdk
-from dataclasses import dataclass
 
 from alsa_midi import SequencerClient
-from .messages import read_settings, Group, Setting, modulators
-from .core import Register, AlsaPort
+from .messages import read_settings, Group, modulators
+from .core import Register, AlsaPort, BytesPort
 from .db import NymphesDB
 
 
@@ -66,21 +62,31 @@ class Interface:
 
             self.q_out.task_done()
 
-    def read_nymphes(self):
-        for chan, param, value in self.nymphes_in_port.read_cc(self.quit_event):
+    def read_port(self, port, forward=False):
+        for chan, param, value in port.read_cc(self.quit_event):
+            if forward:
+                self.nymphes_out_port.send_cc(chan, param, value)
             if param not in self.register.midi_map:
                 logging.warn("msg %u %u %u unknown", chan, param, value)
                 continue
             kind, ctrl = self.register.midi_map[param]
             logging.debug("msg %u %u %u, read as %s:%s", chan, param, value, kind, ctrl)
             if kind == "mod":
-                self.register.values[self.nymphes_in_port.selected_mod][ctrl] = value
-                self.set_ui(ctrl, self.nymphes_in_port.selected_mod, value)
+                self.register.values[port.selected_mod][ctrl] = value
+                self.set_ui(ctrl, port.selected_mod, value)
             elif ctrl == "modulators.selector":
-                self.nymphes_in_port.selected_mod = value + 1
+                port.selected_mod = value + 1
             else:
                 self.register.values[0][ctrl] = value
                 self.set_ui(ctrl, 0, value)
+
+    def read_nymphes(self):
+        self.read_port(self.nymphes_in_port, forward=False)
+
+    def load_snapshot(self, snap_id):
+        midi = self.db.snapshot(snap_id).midi
+        port = BytesPort(midi)
+        self.read_port(port, forward=True)
 
 
 def slider_group(group: Group, on_changed):
@@ -251,12 +257,13 @@ def session_pane(iface):
     snaps_frame.set_child(snaps_scroll)
     snaps_frame.set_vexpand(True)
     info.append(snaps_frame)
+    info.set_sensitive(False)
 
-    vpaned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
-    vpaned.set_start_child(ctrl)
-    vpaned.set_end_child(info)
-    vpaned.set_position(500)
-    return vpaned
+    vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 5)
+    vbox.append(ctrl)
+    vbox.append(info)
+    vbox.set_homogeneous(True)
+    return vbox
 
 
 def on_activate(app, iface):
@@ -367,7 +374,7 @@ def on_activate(app, iface):
     paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
     paned.set_start_child(side)
     paned.set_end_child(scrolled_main)
-    paned.set_position(200)
+    paned.set_position(300)
 
     win.set_child(paned)
     win.present()

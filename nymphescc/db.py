@@ -33,11 +33,10 @@ class Snapshot:
 
 
 @dataclass
-class Group:
+class GroupInfo:
     key: int
     name: str
     description: Optional[str]
-    snapshots: list[Snapshot]
 
 
 class NymphesDB:
@@ -71,17 +70,24 @@ class NymphesDB:
         return [Snapshot(key, datetime.fromisoformat(date), tags, midi)
                 for key, date, midi, tags in members.fetchall()]
 
+    def groups(self):
+        groups = self._cursor.execute("""
+            select * from "groups"
+            """).fetchall()
+        return [GroupInfo(key, name, description)
+                for key, name, description in groups]
+
     def snapshot(self, snap_id: int) -> Snapshot:
         key, date, midi, tags = self._cursor.execute("""
             select "id", "date", "midi", "tags" from "snapshots"
             where "id" is ?""", (snap_id,)).fetchone()
         return Snapshot(key, datetime.fromisoformat(date), tags, midi)
 
-    def tree(self) -> list[Group]:
+    def tree(self) -> list[tuple[GroupInfo, list[Snapshot]]]:
         groups = self._cursor.execute("""
             select * from "groups"
             """).fetchall()
-        return [Group(key, name, description, self.group(key))
+        return [(GroupInfo(key, name, description), self.group(key))
                 for key, name, description in groups]
 
     def close(self):
@@ -99,6 +105,6 @@ def test_db(tmp_path: Path):
     assert s.midi == b"123"
     assert datetime.utcnow() - s.date < timedelta(seconds=2)
     t = db.tree()
-    assert t[0].name == "hello"
-    assert len(t[0].snapshots) == 1
+    assert t[0][0].name == "hello"
+    assert len(t[0][1]) == 1
 # ~\~ end
