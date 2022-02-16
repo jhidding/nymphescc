@@ -49,7 +49,7 @@ class NymphesDB:
         self._cursor.executescript(db_schema)
         self._connection.commit()
 
-    def new_group(self, name: str, description: Optional[str]) -> int:
+    def new_group(self, name: str, description: Optional[str] = None) -> int:
         self._cursor.execute("""
             insert into "groups" ("name", "description")
             values (?, ?)""", (name, description))
@@ -63,7 +63,13 @@ class NymphesDB:
         self._connection.commit()
         return self._cursor.lastrowid
 
-    def group(self, group_id: int) -> list[Snapshot]:
+    def group_info(self, group_id: int) -> GroupInfo:
+        info = self._cursor.execute("""
+            select "id", "name", "description" from "groups"
+            where "id" is ?""", (group_id,))
+        return GroupInfo(*info.fetchone())
+
+    def group_snapshots(self, group_id: int) -> list[Snapshot]:
         members = self._cursor.execute("""
             select "id", "date", "midi", "tags" from "snapshots"
             where "group" is ?""", (group_id,))
@@ -73,9 +79,8 @@ class NymphesDB:
     def groups(self):
         groups = self._cursor.execute("""
             select * from "groups"
-            """).fetchall()
-        return [GroupInfo(key, name, description)
-                for key, name, description in groups]
+            """)
+        return [GroupInfo(*g) for g in groups.fetchall()]
 
     def snapshot(self, snap_id: int) -> Snapshot:
         key, date, midi, tags = self._cursor.execute("""
@@ -87,7 +92,7 @@ class NymphesDB:
         groups = self._cursor.execute("""
             select * from "groups"
             """).fetchall()
-        return [(GroupInfo(key, name, description), self.group(key))
+        return [(GroupInfo(key, name, description), self.group_snapshots(key))
                 for key, name, description in groups]
 
     def close(self):

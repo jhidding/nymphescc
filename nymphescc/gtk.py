@@ -1,6 +1,6 @@
 # ~\~ language=Python filename=nymphescc/gtk.py
 # ~\~ begin <<lit/gtk.md|nymphescc/gtk.py>>[0]
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 import queue
 from queue import Queue
@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GLib, Gdk
+from gi.repository import GObject, Gtk, GLib, Gdk, Gio
 
 from alsa_midi import SequencerClient
 from .messages import read_settings, Group, modulators
@@ -200,15 +200,62 @@ def tool_bar(**icon_names) -> tuple[Gtk.Box, dict[str, Gtk.Button]]:
     return box, buttons
 
 
+class TaggedListBoxRow(Gtk.ListBoxRow):
+    def __init__(self, tag: int):
+        super(TaggedListBoxRow, self).__init__()
+        self.tag = tag
+
+
+class GGroupInfo(GObject.GObject):
+    key = GObject.property(type=int)
+    name = GObject.property(type=str)
+    description = GObject.property(type=str)
+
+    def __init__(self):
+        super(GGroupInfo, self).__init__()
+
+
+class GSnapshotInfo(GObject.GObject):
+    key = GObject.property(type=int)
+    timestamp = GObject.property(type=int)
+
 @dataclass
 class SessionPane:
     search_entry: Gtk.SearchEntry
     session_list: Gtk.ListBox
-    add_session: Gtk.Button
+    add_session_button: Gtk.Button
+
+    info_box: Gtk.Box
     name: Gtk.Entry
     description: Gtk.TextView
     snapshots: Gtk.ListBox
-    add_snapshot: Gtk.Button
+    add_snapshot_button: Gtk.Button
+
+    session_list_store: Gio.ListStore = field(default_factory=lambda: Gio.ListStore.new(GGroupInfo))
+    snapshot_list_store: Gio.ListStore
+
+    def load_groups(self, iface):
+        self.session_list_store.
+
+
+    def select_group_event(self, _, iface):
+        group_id = self.session_list.get_selected_row().tag
+
+        self.info_box.set_sensitive(True)
+        info = iface.db.group_info(group_id)
+        self.name.get_buffer().set_text(info.name)
+        self.description.get_buffer().set_text(info.description)
+        self.load_snaps(iface, group_id)
+
+    def add_session_event(self, _, iface):
+        group_id = iface.db.new_group("New Group")
+        self.groups_add_row(group_id, iface)
+        self.select_group(group_id)
+
+    def name_changed_event(self, _, iface):
+        name = self.name.get_buffer().get_text()
+        group_id = iface.db.new_group(name)
+        self._init_session = False
 
 
 def session_pane(iface):
@@ -284,14 +331,18 @@ def session_pane(iface):
     vbox.append(info)
     vbox.set_homogeneous(True)
 
-    return vbox, SessionPane(
+    pane = SessionPane(
         search_entry=search_bar,
         session_list=session_list,
-        add_session=new_group_button,
+        add_session_button=new_group_button,
         name=title,
         description=descr,
         snapshots=snaps,
-        add_snapshot=new_snapshot_button)
+        add_snapshot_button=new_snapshot_button)
+
+    pane.add_session_button.connect("clicked", pane.add_session, iface)
+
+    return vbox
 
 
 def on_activate(app, iface):
@@ -395,7 +446,7 @@ def on_activate(app, iface):
         for ctrl, value in v.items():
             set_ui_value(ctrl, mod, value)
 
-    side, _ = session_pane(iface)
+    side, session_pane = session_pane(iface)
 
     scrolled_main = Gtk.ScrolledWindow()
     scrolled_main.set_child(grid)
