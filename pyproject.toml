@@ -6,7 +6,6 @@ authors = ["Johan Hidding <j.hidding@esciencecenter.nl>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-wxPython = "^4.1.1"
 mido = "^1.2.10"
 dhall = "^0.1.12"
 pycairo = "^1.20.1"
