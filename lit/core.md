@@ -144,6 +144,11 @@ class Register:
             port.send_cc(0, self.flat_config[ctrl].mod, value)
         else:
             port.send_cc(0, self.flat_config[ctrl].cc, value)
+
+    def send_all(self, port):
+        for mod, s in self.values.items():
+            for ctrl, value in s.items():
+                self.send_cc(port, ctrl, mod, value)
 ```
 
 ## Reading messages

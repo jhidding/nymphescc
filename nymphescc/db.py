@@ -69,7 +69,7 @@ class NymphesDB:
             where "id" is ?""", (group_id,))
         return GroupInfo(*info.fetchone())
 
-    def group_snapshots(self, group_id: int) -> list[Snapshot]:
+    def snapshots(self, group_id: int) -> list[Snapshot]:
         members = self._cursor.execute("""
             select "id", "date", "midi", "tags" from "snapshots"
             where "group" is ?""", (group_id,))
@@ -92,7 +92,7 @@ class NymphesDB:
         groups = self._cursor.execute("""
             select * from "groups"
             """).fetchall()
-        return [(GroupInfo(key, name, description), self.group_snapshots(key))
+        return [(GroupInfo(key, name, description), self.snapshots(key))
                 for key, name, description in groups]
 
     def close(self):

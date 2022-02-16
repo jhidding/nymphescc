@@ -1,5 +1,6 @@
 # ~\~ language=Python filename=nymphescc/gtk.py
 # ~\~ begin <<lit/gtk.md|nymphescc/gtk.py>>[0]
+from __future__ import annotations
 from dataclasses import dataclass, field
 import logging
 import queue
@@ -9,6 +10,7 @@ from threading import Thread
 from importlib import resources
 import re
 from collections import OrderedDict
+from datetime import datetime
 
 import gi
 gi.require_version("Gtk", "4.0")
@@ -86,6 +88,11 @@ class Interface:
         midi = self.db.snapshot(snap_id).midi
         port = BytesPort(midi)
         self.read_port(port, forward=True)
+
+    def get_midi(self):
+        port = BytesPort()
+        self.register.send_all(port)
+        return port.bytes
 
 
 def slider_group(group: Group, on_changed):
@@ -200,12 +207,6 @@ def tool_bar(**icon_names) -> tuple[Gtk.Box, dict[str, Gtk.Button]]:
     return box, buttons
 
 
-class TaggedListBoxRow(Gtk.ListBoxRow):
-    def __init__(self, tag: int):
-        super(TaggedListBoxRow, self).__init__()
-        self.tag = tag
-
-
 class GGroupInfo(GObject.GObject):
     key = GObject.property(type=int)
     name = GObject.property(type=str)
@@ -214,13 +215,33 @@ class GGroupInfo(GObject.GObject):
     def __init__(self):
         super(GGroupInfo, self).__init__()
 
+    @staticmethod
+    def new(key: int, name: str, description: str) -> GGroupInfo:
+        obj = GGroupInfo()
+        obj.key = key
+        obj.name = name
+        obj.description = description
+        return obj
+
 
 class GSnapshotInfo(GObject.GObject):
     key = GObject.property(type=int)
-    timestamp = GObject.property(type=int)
+    timestamp = GObject.property(type=float)
+
+    def __init__(self):
+        super(GSnapshotInfo, self).__init__()
+
+    @staticmethod
+    def new(key: int, timestamp: float) -> GSnapshotInfo:
+        obj = GSnapshotInfo()
+        obj.key = key
+        obj.timestamp = timestamp
+        return obj
+
 
 @dataclass
 class SessionPane:
+    iface: Interface
     search_entry: Gtk.SearchEntry
     session_list: Gtk.ListBox
     add_session_button: Gtk.Button
@@ -228,33 +249,65 @@ class SessionPane:
     info_box: Gtk.Box
     name: Gtk.Entry
     description: Gtk.TextView
-    snapshots: Gtk.ListBox
+    snapshot_list: Gtk.ListBox
     add_snapshot_button: Gtk.Button
 
-    session_list_store: Gio.ListStore = field(default_factory=lambda: Gio.ListStore.new(GGroupInfo))
-    snapshot_list_store: Gio.ListStore
+    session_list_store: Gio.ListStore \
+        = field(default_factory=lambda: Gio.ListStore.new(GGroupInfo))
+    snapshot_list_store: Gio.ListStore \
+        = field(default_factory=lambda: Gio.ListStore.new(GSnapshotInfo))
 
-    def load_groups(self, iface):
-        self.session_list_store.
+    def __post_init__(self):
+        self.session_list.bind_model(self.session_list_store, self.session_list_row)
+        self.snapshot_list.bind_model(self.snapshot_list_store, self.snapshot_list_row)
+        self.session_list.connect("row-select", self.select_group_event)
+        self.snapshot_list.connect("row-select", self.select_snapshot_event)
+        self.add_session_button.connect("click", self.add_session_event)
+        self.add_snapshot_button.connect("click", self.add_snapshot_event)
 
+    @property
+    def group_id(self):
+        idx = self.session_list.get_selected_row_index()
+        return self.session_list_store.get_item(idx).key
 
-    def select_group_event(self, _, iface):
-        group_id = self.session_list.get_selected_row().tag
+    def session_list_row(self, group_info: GGroupInfo) -> Gtk.Label:
+        return Gtk.Label.new(group_info.name)
 
+    def snapshot_list_row(self, snapshot_info: GSnapshotInfo) -> Gtk.Label:
+        return Gtk.Label.new(datetime.from_timestamp(snapshot_info.timestamp).strftime("%c"))
+
+    def load_groups(self):
+        self.session_list_store.remove_all()
+        for g in self.iface.db.groups():
+            self.session_list_store.append(GGroupInfo.new(g.key, g.name, g.description))
+
+    def load_snapshots(self, group_id):
+        self.snapshot_list_store.remove_all()
+        for s in self.iface.db.snapshots(group_id):
+            self.snapshot_list_store.append(GSnapshotInfo(s.key, s.timestamp.timestamp()))
+
+    def select_group_event(self, _):
+        info = self.iface.db.group_info(self.group_id)
         self.info_box.set_sensitive(True)
-        info = iface.db.group_info(group_id)
         self.name.get_buffer().set_text(info.name)
         self.description.get_buffer().set_text(info.description)
-        self.load_snaps(iface, group_id)
+        self.load_snapshots(info.key)
 
-    def add_session_event(self, _, iface):
-        group_id = iface.db.new_group("New Group")
-        self.groups_add_row(group_id, iface)
-        self.select_group(group_id)
+    def add_session_event(self, _):
+        group_id = self.iface.db.new_group("New Group")
+        info = self.iface.db.group_info(group_id)
+        self.session_list_store.append(GGroupInfo.new(info.key, info.name, info.description))
+        idx = self.session_list_store.get_n_items()
+        self.session_list.select_row(idx - 1)
 
-    def name_changed_event(self, _, iface):
+    def add_snapshot_event(self, _):
+        idx = self.session_list.get_selected_row_index()
+        info = self.session_list_store.get_item(idx)
+        snap_id = self.iface.db.new_snapshot(info.key, self.iface.get_midi())
+
+    def name_changed_event(self, _):
         name = self.name.get_buffer().get_text()
-        group_id = iface.db.new_group(name)
+        group_id = self.iface.db.new_group(name)
         self._init_session = False
 
 
