@@ -11,6 +11,7 @@ from importlib import resources
 import re
 from collections import OrderedDict
 from datetime import datetime
+import functools
 
 import gi
 gi.require_version("Gtk", "4.0")
@@ -239,6 +240,51 @@ class GSnapshotInfo(GObject.GObject):
         return obj
 
 
+class DeletableRow(Gtk.Box):
+    def __init__(self):
+        super(DeletableRow, self).__init__()
+
+    @staticmethod
+    def new(text: str):
+        box = DeletableRow()
+        box._label = Gtk.Label.new(text)
+        box._label.set_hexpand(True)
+        box._label.set_justify(Gtk.Justification.LEFT)
+        box._label.set_halign(Gtk.Align.START)
+        box._label.set_margin_top(10)
+        box._label.set_margin_bottom(10)
+        box._label.set_margin_start(5)
+        box.append(box._label)
+        box._delete_button = icon_button("edit-delete-symbolic")
+        box._delete_button.set_has_frame(False)
+        box.append(box._delete_button)
+        box.hide_delete_button()
+        return box
+
+    def show_delete_button(self):
+        self._delete_button.set_visible(True)
+
+    def hide_delete_button(self):
+        self._delete_button.set_visible(False)
+
+    def set_label(self, text: str):
+        self._label.set_label(text)
+
+    @property
+    def delete_button(self):
+        return self._delete_button
+
+
+def maybe(f):
+    @functools.wraps(f)
+    def maybe_f(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except AttributeError:
+            return None
+    return maybe_f
+
+
 @dataclass
 class SessionPane:
     iface: Interface
@@ -266,25 +312,38 @@ class SessionPane:
         self.add_snapshot_button.connect("clicked", self.add_snapshot_event)
         self.name.connect("changed", self.name_changed_event)
         self.description.get_buffer().connect("changed", self.description_changed_event)
+        self.name.connect("editing-done", self.focus_description)
         self.load_groups()
+        self._selected_row = None
 
-    @property
+    @maybe
     def group_id(self):
         idx = self.session_list.get_selected_row().get_index()
         return self.session_list_store.get_item(idx).key
 
-    @property
+    @maybe
     def group_info(self):
         idx = self.session_list.get_selected_row().get_index()
         return self.session_list_store.get_item(idx)
 
-    @property
+    @maybe
     def snapshot_id(self):
         idx = self.snapshot_list.get_selected_row().get_index()
         return self.snapshot_list_store.get_item(idx).key
 
-    def session_list_row(self, group_info: GGroupInfo) -> Gtk.Label:
-        return Gtk.Label.new(group_info.name)
+    def session_list_row(self, group_info: GGroupInfo) -> DeletableRow:
+        x = DeletableRow.new(group_info.name)
+        x.delete_button.connect("clicked", self.delete_session)
+        return x
+
+    def focus_description(self, _):
+        self.description.grab_focus()
+
+    def delete_session(self, _):
+        idx = self.session_list.get_selected_row().get_index()
+        self.iface.db.delete_group(self.group_id())
+        self._selected_row = None
+        self.session_list_store.remove(idx)
 
     def snapshot_list_row(self, snapshot_info: GSnapshotInfo) -> Gtk.Label:
         return Gtk.Label.new(datetime.fromtimestamp(snapshot_info.timestamp).strftime("%c"))
@@ -299,15 +358,29 @@ class SessionPane:
         for s in self.iface.db.snapshots(group_id):
             self.snapshot_list_store.append(GSnapshotInfo.new(s.key, s.timestamp.timestamp()))
 
-    def select_group_event(self, _1, _2):
-        info = self.iface.db.group_info(self.group_id)
+    def select_group_event(self, _1, row):
+        if row is None:
+            self.info_box.set_sensitive(False)
+            self.name.set_text("")
+            self.description.get_buffer().set_text("", -1)
+            self.snapshot_list_store.remove_all()
+            return
+
+        row.get_child().show_delete_button()
+        if self._selected_row:
+            self._selected_row.get_child().hide_delete_button()
+        self._selected_row = row
+
+        info = self.iface.db.group_info(self.group_id())
         self.info_box.set_sensitive(True)
         self.name.set_text(info.name)
         self.description.get_buffer().set_text(info.description or "", -1)
         self.load_snapshots(info.key)
 
     def select_snapshot_event(self, _1, _2):
-        self.iface.load_snapshot(self.snapshot_id)
+        if self.snapshot_id() is None:
+            return
+        self.iface.load_snapshot(self.snapshot_id())
 
     def add_session_event(self, _):
         group_id = self.iface.db.new_group("New Group")
@@ -319,22 +392,24 @@ class SessionPane:
         self.name.grab_focus()
 
     def add_snapshot_event(self, _):
-        snap_id = self.iface.db.new_snapshot(self.group_info.key, self.iface.get_midi())
+        snap_id = self.iface.db.new_snapshot(self.group_info().key, self.iface.get_midi())
         s = self.iface.db.snapshot(snap_id)
         self.snapshot_list_store.append(GSnapshotInfo.new(s.key, s.timestamp.timestamp()))
         idx = self.snapshot_list_store.get_n_items() - 1
         self.snapshot_list.select_row(self.snapshot_list.get_row_at_index(idx))
 
     def name_changed_event(self, _):
+        if self.group_id() is None:
+            return
         name = self.name.get_text()
-        self.iface.db.set_name(self.group_id, name)
-        self.group_info.name = name
-        self.session_list.get_selected_row().set_child(self.session_list_row(self.group_info))
+        self.iface.db.set_name(self.group_id(), name)
+        self.group_info().name = name
+        self.session_list.get_selected_row().get_child().set_label(name)
 
     def description_changed_event(self, buffer):
         start = buffer.get_start_iter()
         end = buffer.get_end_iter()
-        self.iface.db.set_description(self.group_id, buffer.get_text(start, end, True))
+        self.iface.db.set_description(self.group_id(), buffer.get_text(start, end, True))
 
 
 def session_pane(iface):

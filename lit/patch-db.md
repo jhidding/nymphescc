@@ -65,6 +65,11 @@ class NymphesDB:
         self._connection.commit()
         return self._cursor.lastrowid
 
+    def delete_group(self, group_id: int):
+        self._cursor.execute("""
+            delete from "groups" where "id" = ?""", (group_id,))
+        self._connection.commit()
+
     def group_info(self, group_id: int) -> GroupInfo:
         info = self._cursor.execute("""
             select "id", "name", "description" from "groups"
