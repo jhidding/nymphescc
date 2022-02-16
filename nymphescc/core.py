@@ -21,7 +21,7 @@ class BytesPort:
         return True
 
     def send_cc(self, channel: int, param: int, value: int):
-        msg = mido.Message("control_change", channel=channel, param=param, value=value)
+        msg = mido.Message("control_change", channel=channel, control=param, value=value)
         self._file.write(msg.bin())
 
     @property
@@ -29,9 +29,9 @@ class BytesPort:
         return self._file.getbuffer()
 
     def read_cc(self, _) -> Iterator[tuple[int, int, int]]:
-        for msg in mido.Parser().feed(self.bytes):
+        for msg in mido.parse_all(self.bytes):
             if msg.is_cc():
-                yield msg.channel, msg.param, msg.value
+                yield msg.channel, msg.control, msg.value
 
 
 import alsa_midi
@@ -128,6 +128,8 @@ class Register:
         values = { mod: { k: 0 for k, v in flat_config.items() if v.mod is not None}
                    for mod in range(1, len(modulators(config))) } \
                | { 0: baseline_values }
+
+        values[0]["misc.amp"] = 127
 
         return Register(
             flat_config,

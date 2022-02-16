@@ -262,21 +262,34 @@ class SessionPane:
     def __post_init__(self):
         self.session_list.bind_model(self.session_list_store, self.session_list_row)
         self.snapshot_list.bind_model(self.snapshot_list_store, self.snapshot_list_row)
-        self.session_list.connect("row-select", self.select_group_event)
-        self.snapshot_list.connect("row-select", self.select_snapshot_event)
-        self.add_session_button.connect("click", self.add_session_event)
-        self.add_snapshot_button.connect("click", self.add_snapshot_event)
+        self.session_list.connect("row-selected", self.select_group_event)
+        self.snapshot_list.connect("row-selected", self.select_snapshot_event)
+        self.add_session_button.connect("clicked", self.add_session_event)
+        self.add_snapshot_button.connect("clicked", self.add_snapshot_event)
+        self.name.connect("changed", self.name_changed_event)
+        self.description.get_buffer().connect("changed", self.description_changed_event)
+        self.load_groups()
 
     @property
     def group_id(self):
-        idx = self.session_list.get_selected_row_index()
+        idx = self.session_list.get_selected_row().get_index()
         return self.session_list_store.get_item(idx).key
+
+    @property
+    def group_info(self):
+        idx = self.session_list.get_selected_row().get_index()
+        return self.session_list_store.get_item(idx)
+
+    @property
+    def snapshot_id(self):
+        idx = self.snapshot_list.get_selected_row().get_index()
+        return self.snapshot_list_store.get_item(idx).key
 
     def session_list_row(self, group_info: GGroupInfo) -> Gtk.Label:
         return Gtk.Label.new(group_info.name)
 
     def snapshot_list_row(self, snapshot_info: GSnapshotInfo) -> Gtk.Label:
-        return Gtk.Label.new(datetime.from_timestamp(snapshot_info.timestamp).strftime("%c"))
+        return Gtk.Label.new(datetime.fromtimestamp(snapshot_info.timestamp).strftime("%c"))
 
     def load_groups(self):
         self.session_list_store.remove_all()
@@ -286,31 +299,44 @@ class SessionPane:
     def load_snapshots(self, group_id):
         self.snapshot_list_store.remove_all()
         for s in self.iface.db.snapshots(group_id):
-            self.snapshot_list_store.append(GSnapshotInfo(s.key, s.timestamp.timestamp()))
+            self.snapshot_list_store.append(GSnapshotInfo.new(s.key, s.timestamp.timestamp()))
 
-    def select_group_event(self, _):
+    def select_group_event(self, _1, _2):
         info = self.iface.db.group_info(self.group_id)
         self.info_box.set_sensitive(True)
-        self.name.get_buffer().set_text(info.name)
-        self.description.get_buffer().set_text(info.description)
+        self.name.set_text(info.name)
+        self.description.get_buffer().set_text(info.description or "", -1)
         self.load_snapshots(info.key)
+
+    def select_snapshot_event(self, _1, _2):
+        self.iface.load_snapshot(self.snapshot_id)
 
     def add_session_event(self, _):
         group_id = self.iface.db.new_group("New Group")
         info = self.iface.db.group_info(group_id)
         self.session_list_store.append(GGroupInfo.new(info.key, info.name, info.description))
-        idx = self.session_list_store.get_n_items()
-        self.session_list.select_row(idx - 1)
+        idx = self.session_list_store.get_n_items() - 1
+        self.session_list.select_row(self.session_list.get_row_at_index(idx))
+        self.name.select_region(0, -1)
+        self.name.grab_focus()
 
     def add_snapshot_event(self, _):
-        idx = self.session_list.get_selected_row_index()
-        info = self.session_list_store.get_item(idx)
-        snap_id = self.iface.db.new_snapshot(info.key, self.iface.get_midi())
+        snap_id = self.iface.db.new_snapshot(self.group_info.key, self.iface.get_midi())
+        s = self.iface.db.snapshot(snap_id)
+        self.snapshot_list_store.append(GSnapshotInfo.new(s.key, s.timestamp.timestamp()))
+        idx = self.snapshot_list_store.get_n_items() - 1
+        self.snapshot_list.select_row(self.snapshot_list.get_row_at_index(idx))
 
     def name_changed_event(self, _):
-        name = self.name.get_buffer().get_text()
-        group_id = self.iface.db.new_group(name)
-        self._init_session = False
+        name = self.name.get_text()
+        self.iface.db.set_name(self.group_id, name)
+        self.group_info.name = name
+        self.session_list.get_selected_row().set_child(self.session_list_row(self.group_info))
+
+    def description_changed_event(self, buffer):
+        start = buffer.get_start_iter()
+        end = buffer.get_end_iter()
+        self.iface.db.set_description(self.group_id, buffer.get_text(start, end, True))
 
 
 def session_pane(iface):
@@ -321,9 +347,6 @@ def session_pane(iface):
     list_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 5)
     list_box.append(session_list)
     list_box.append(list_box_label(""))
-    for i in range(10):
-        session_list.append(list_box_label("hello"))
-        session_list.append(list_box_label("world"))
     # session_list.set_vexpand(True)
     scroll = Gtk.ScrolledWindow()
     scroll.set_child(list_box)
@@ -387,17 +410,17 @@ def session_pane(iface):
     vbox.set_homogeneous(True)
 
     pane = SessionPane(
+        iface=iface,
         search_entry=search_bar,
         session_list=session_list,
         add_session_button=new_group_button,
+        info_box=info,
         name=title,
         description=descr,
-        snapshots=snaps,
+        snapshot_list=snaps,
         add_snapshot_button=new_snapshot_button)
 
-    pane.add_session_button.connect("clicked", pane.add_session, iface)
-
-    return vbox
+    return vbox, pane
 
 
 def on_activate(app, iface):
@@ -501,7 +524,7 @@ def on_activate(app, iface):
         for ctrl, value in v.items():
             set_ui_value(ctrl, mod, value)
 
-    side, session_pane = session_pane(iface)
+    side, _ = session_pane(iface)
 
     scrolled_main = Gtk.ScrolledWindow()
     scrolled_main.set_child(grid)

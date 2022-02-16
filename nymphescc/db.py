@@ -27,7 +27,7 @@ create table if not exists "groups"
 @dataclass
 class Snapshot:
     key: int
-    date: datetime
+    timestamp: datetime
     tags: Optional[str]
     midi: bytes
 
@@ -76,6 +76,18 @@ class NymphesDB:
         return [Snapshot(key, datetime.fromisoformat(date), tags, midi)
                 for key, date, midi, tags in members.fetchall()]
 
+    def set_name(self, group_id, name):
+        self._cursor.execute("""
+            update "groups" set "name" = ?
+            where "id" = ?""", (name, group_id))
+        self._connection.commit()
+
+    def set_description(self, group_id, name):
+        self._cursor.execute("""
+            update "groups" set "description" = ?
+            where "id" = ?""", (name, group_id))
+        self._connection.commit()
+
     def groups(self):
         groups = self._cursor.execute("""
             select * from "groups"
@@ -108,7 +120,7 @@ def test_db(tmp_path: Path):
     assert isinstance(snap_id, int)
     s = db.snapshot(snap_id)
     assert s.midi == b"123"
-    assert datetime.utcnow() - s.date < timedelta(seconds=2)
+    assert datetime.utcnow() - s.timestamp < timedelta(seconds=2)
     t = db.tree()
     assert t[0][0].name == "hello"
     assert len(t[0][1]) == 1
