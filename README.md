@@ -1,6 +1,6 @@
 ---
 title: "NymphesCC"
-subtitle: "MIDI controller using WxPython"
+subtitle: "MIDI controller"
 author: "Johan Hidding"
 ---
 
