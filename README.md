@@ -35,6 +35,7 @@ Clone this repository and run `pip install --user .`, or use `poetry install` to
 - Add status to show if we're connected with device.
 - Add name metadata to snapshots.
 - Add delete button to snapshots.
+- Implement search bar
 
 ## License
 >   Copyright 2022 Johan Hidding
