@@ -8,6 +8,4 @@ author: "Johan Hidding"
 __version__ = "0.1.0"
 ```
 
-From the Nymphes manual we get a table with MIDI CC messages.
-
-# The GUI
+![Screenshot](fig/screenshot.png)
