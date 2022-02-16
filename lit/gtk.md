@@ -2,6 +2,7 @@
 The GUI is using Gtk 4.0.
 
 ``` {.python file=nymphescc/gtk.py}
+from dataclasses import dataclass
 import logging
 import queue
 from queue import Queue
@@ -201,6 +202,17 @@ def tool_bar(**icon_names) -> tuple[Gtk.Box, dict[str, Gtk.Button]]:
     return box, buttons
 
 
+@dataclass
+class SessionPane:
+    search_entry: Gtk.SearchEntry
+    session_list: Gtk.ListBox
+    add_session: Gtk.Button
+    name: Gtk.Entry
+    description: Gtk.TextView
+    snapshots: Gtk.ListBox
+    add_snapshot: Gtk.Button
+
+
 def session_pane(iface):
     search_bar = Gtk.SearchEntry()
 
@@ -249,13 +261,23 @@ def session_pane(iface):
     descr_frame.set_child(descr_scroll)
     info.append(descr_frame)
 
+    snaps_overlay = Gtk.Overlay()
+    new_snapshot_button = icon_button("list-add-symbolic")
+    new_snapshot_button.set_property("halign", Gtk.Align.CENTER)
+    new_snapshot_button.set_property("valign", Gtk.Align.END)
+    new_snapshot_button.set_margin_bottom(5)
     snaps_frame = Gtk.Frame()
     snaps_frame.set_label("Snapshots")
     snaps_scroll = Gtk.ScrolledWindow()
     snaps = Gtk.ListBox()
-    snaps_scroll.set_child(snaps)
-    snaps_frame.set_child(snaps_scroll)
+    snaps_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
+    snaps_box.append(snaps)
+    snaps_box.append(list_box_label(""))
+    snaps_scroll.set_child(snaps_box)
+    snaps_frame.set_child(snaps_overlay)
     snaps_frame.set_vexpand(True)
+    snaps_overlay.set_child(snaps_scroll)
+    snaps_overlay.add_overlay(new_snapshot_button)
     info.append(snaps_frame)
     info.set_sensitive(False)
 
@@ -263,7 +285,15 @@ def session_pane(iface):
     vbox.append(ctrl)
     vbox.append(info)
     vbox.set_homogeneous(True)
-    return vbox
+
+    return vbox, SessionPane(
+        search_entry=search_bar,
+        session_list=session_list,
+        add_session=new_group_button,
+        name=title,
+        description=descr,
+        snapshots=snaps,
+        add_snapshot=new_snapshot_button)
 
 
 def on_activate(app, iface):
@@ -367,7 +397,7 @@ def on_activate(app, iface):
         for ctrl, value in v.items():
             set_ui_value(ctrl, mod, value)
 
-    side = session_pane(iface)
+    side, _ = session_pane(iface)
 
     scrolled_main = Gtk.ScrolledWindow()
     scrolled_main.set_child(grid)
