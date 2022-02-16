@@ -1,23 +1,67 @@
+@define-color global_color     #274e62;
+@define-color baseline_color   #0d5a66;
+@define-color lfo_2_color      #09645f;
+@define-color mod_wheel_color  #2c6d51;
+@define-color velocity_color   #50733f;
+@define-color aftertouch_color #757532;
+
 #session-title text {
     font-weight: bold;
 }
 
+scale trough highlight {
+    background-color: @global_color;
+    border-color: lighter(@global_color);
+}
+
+list row:selected {
+    background-color: @global_color;
+}
+
+list.mod row label {
+    margin-left: 5pt;
+    border-left-width: 10pt;
+    border-left-style: solid;
+    border-left-color: lighter(@baseline_color);
+}
+
+list.mod row label#lfo-2 {
+    border-left-color: lighter(@lfo_2_color);
+}
+
+list.mod row label#mod-wheel {
+    border-left-color: lighter(@mod_wheel_color);
+}
+
+list.mod row label#velocity {
+    border-left-color: lighter(@velocity_color);
+}
+
+list.mod row label#aftertouch {
+    border-left-color: lighter(@aftertouch_color);
+}
+
+.mod-baseline scale.mod trough highlight, .mod-baseline list.mod row:selected {
+    background-color: @baseline_color;
+    border-color: lighter(@baseline_color);
+}
+
 .mod-lfo-2 scale.mod trough highlight, .mod-lfo-2 list.mod row:selected {
-    background-color: #cc0000;
-    border-color: #cc0000;
+    background-color: @lfo_2_color;
+    border-color: lighter(@lfo_2_color);
 }
 
 .mod-mod-wheel scale.mod trough highlight, .mod-mod-wheel list.mod row:selected {
-    background-color: #8800ff;
-    border-color: #8800ff;
-} 
- 
+    background-color: @mod_wheel_color;
+    border-color: lighter(@mod_wheel_color);
+}
+
 .mod-velocity scale.mod trough highlight, .mod-velocity list.mod row:selected {
-    background-color: #008800;
-    border-color: #008800;
+    background-color: @velocity_color;
+    border-color: lighter(@velocity_color);
 }
 
 .mod-aftertouch scale.mod trough highlight, .mod-aftertouch list.mod row:selected {
-    background-color: #ff8800;
-    border-color: #ff8800;
+    background-color: @aftertouch_color;
+    border-color: lighter(@aftertouch_color);
 }

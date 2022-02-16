@@ -152,6 +152,7 @@ def slider_group(group: Group, on_changed):
 def list_box_label(name: str):
     label = Gtk.Label()
     label.set_label(name)
+    label.set_name(name.lower().replace(" ", "-"))
     label.set_margin_top(5)
     label.set_margin_bottom(5)
     return label
