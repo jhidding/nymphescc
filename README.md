@@ -25,17 +25,19 @@ There is a rudimentary implementation of a session manager that allows you to st
 - A [Dreadbox Nymphes](https://www.dreadbox-fx.com/nymphes/) attached.
 
 ## Install
-Clone this repository and run `pip install --user .`, or use `poetry install` to install inside virtual env.
+Clone this repository and run `pip install --user .`, or use `poetry install` to install inside virtual env. This should install the `nymphescc` executable in your path.
 
 ## TODO
 
-- Export patches to MIDI files (you can do this using sqlite, but that is not so nice from a UI point of view).
-- Use Base2048 to share patches through Twitter.
-- Add button to explicitely sync setting with device.
-- Add status to show if we're connected with device.
-- Add name metadata to snapshots.
-- Add delete button to snapshots.
-- Implement search bar
+- [x] Firmware 2.0 support (1.0 no longer works)
+- [ ] Decode Sysex messages
+- [ ] Export patches to MIDI files (you can do this using sqlite, but that is not so nice from a UI point of view).
+- [ ] Use Base2048 to share patches through Twitter.
+- [ ] Add button to explicitely sync setting with device.
+- [ ] Add status to show if we're connected with device.
+- [ ] Add name metadata to snapshots.
+- [ ] Add delete button to snapshots.
+- [ ] Implement search bar
 
 ## License
 >   Copyright 2022 Johan Hidding
