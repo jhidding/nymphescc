@@ -33,33 +33,138 @@ let Setting =
         }
       }
 
-in  [ { name = "lfo.lfo-2"
-      , long = "LFO 2"
+in  [ { name = "oscillator"
+      , long = "Oscillator Control"
+      , description = None Text
+      , content =
+            [ Setting::{
+              , cc = 70
+              , description = Some
+                  ''
+                  Controls the shape of the generated wave, going from sawtooth through
+                  square, to triangle waves.
+                  ''
+              , long = "Wave form"
+              , mod = Some 31
+              , name = "wave"
+              , tics = Some
+                [ { label = "⩘", value = 0 }
+                , { label = "⎍", value = 63 }
+                , { label = "⋀", value = 127 }
+                ]
+              }
+            , Setting::{
+              , cc = 12
+              , description = Some
+                  ''
+                  Control the pulse width of the square wave form. This can be modulated
+                  using LFO 2.
+                  ''
+              , long = "Pulse width"
+              , mod = Some 36
+              , name = "pw"
+              }
+            , Setting::{
+              , cc = 9
+              , description = Some
+                  ''
+                  Sets the amplitude of the wave form.
+                  ''
+              , long = "Level"
+              , mod = Some 32
+              , name = "lvl"
+              }
+            , Setting::{
+              , cc = 10
+              , description = Some
+                  ''
+                  Amplitude of sub-oscillator, which produces a square wave one octave
+                  below the main oscillator.
+                  ''
+              , long = "Sub-oscillator"
+              , mod = Some 33
+              , name = "sub"
+              }
+            , Setting::{
+              , cc = 11
+              , description = Some
+                  ''
+                  Amplitude of white noise, mixed in with main oscillator and
+                  sub-oscillator.
+                  ''
+              , long = "Noise level"
+              , mod = Some 34
+              , name = "noise"
+              }
+            , Setting::{
+              , cc = 5
+              , description = Some
+                  ''
+                  Allow notes to glide (portamento). The behaviour strongly depends on the
+                  playing mode. Optionally, glide will respond to legato playing.
+                  ''
+              , flags = Some [ "misc.legato" ]
+              , long = "Glide"
+              , mod = Some 37
+              , name = "gld"
+              }
+            , Setting::{
+              , cc = 13
+              , description = Some
+                  ''
+                  Control the change in pitch of the main oscillator with the LFO, from
+                  subtle vibrato to extreme whoopy sounds.
+                  ''
+              , long = "Low frequency oscillator"
+              , mod = Some 35
+              , name = "lfo"
+              }
+            , Setting::{
+              , cc = 14
+              , description = Some
+                  ''
+                  Control how much the filter envelope modulates the pitch of the
+                  oscillator. Envelopes are unipolar.
+                  ''
+              , long = "Envelope Generator"
+              , mod = Some 41
+              , name = "eg"
+              }
+            , Setting::{
+              , cc = 15
+              , description = Some
+                  ''
+                  Detune notes when in stacked modes (i.e. multiple oscillators per node:
+                  UNI A, UNI B, TRI, DUO).
+                  ''
+              , long = "Detune"
+              , mod = Some 39
+              , name = "dtn"
+              }
+            , Setting::{
+              , cc = 16
+              , description = Some
+                  ''
+                  Choose from different predefined chords (see Chords tab).
+                  ''
+              , long = "Chord control"
+              , mod = Some 40
+              , name = "chord"
+              }
+            ]
+          : List Setting.Type
+      }
+    , { name = "modulators"
+      , long = "Modulators"
       , description = None Text
       , content =
             [ Setting::{
               , bounds = { lower = 0, upper = 3 }
-              , cc = 41
-              , labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ]
-              , long = "Type"
-              , name = "type"
+              , cc = 30
+              , labels = Some [ "LFO 2", "Mod Wheel", "Velocity", "Aftertouch" ]
+              , long = "Selector"
+              , name = "selector"
               }
-            , Setting::{
-              , bounds = { lower = 0, upper = 1 }
-              , cc = 42
-              , labels = Some [ "FREE", "KEY SYNC" ]
-              , long = "Sync"
-              , name = "sync"
-              }
-            , Setting::{ cc = 37, long = "Rate", mod = Some 81, name = "rate" }
-            , Setting::{ cc = 38, long = "Wave", mod = Some 82, name = "wave" }
-            , Setting::{
-              , cc = 39
-              , long = "Delay"
-              , mod = Some 83
-              , name = "delay"
-              }
-            , Setting::{ cc = 40, long = "Fade", mod = Some 84, name = "fade" }
             ]
           : List Setting.Type
       }
@@ -67,10 +172,42 @@ in  [ { name = "lfo.lfo-2"
       , long = "Reverb Control"
       , description = None Text
       , content =
-            [ Setting::{ cc = 44, long = "Size", name = "size" }
-            , Setting::{ cc = 45, long = "Decay", name = "decay" }
-            , Setting::{ cc = 46, long = "Filter", name = "filter" }
-            , Setting::{ cc = 47, long = "Mix", name = "mix" }
+            [ Setting::{ cc = 75, long = "Size", mod = Some 65, name = "size" }
+            , Setting::{
+              , cc = 76
+              , long = "Decay"
+              , mod = Some 66
+              , name = "decay"
+              }
+            , Setting::{
+              , cc = 77
+              , long = "Filter"
+              , mod = Some 67
+              , name = "filter"
+              }
+            , Setting::{ cc = 78, long = "Mix", mod = Some 69, name = "mix" }
+            ]
+          : List Setting.Type
+      }
+    , { name = "envelope.amplitude"
+      , long = "Amplitude Envelope"
+      , description = None Text
+      , content =
+            [ Setting::{ cc = 73, long = "Attack", mod = Some 52, name = "a" }
+            , Setting::{ cc = 84, long = "Decay", mod = Some 53, name = "d" }
+            , Setting::{ cc = 85, long = "Sustain", mod = Some 54, name = "s" }
+            , Setting::{ cc = 72, long = "Release", mod = Some 55, name = "r" }
+            ]
+          : List Setting.Type
+      }
+    , { name = "envelope.filter"
+      , long = "Filter Envelope"
+      , description = None Text
+      , content =
+            [ Setting::{ cc = 79, long = "Attack", mod = Some 48, name = "a" }
+            , Setting::{ cc = 80, long = "Decay", mod = Some 49, name = "d" }
+            , Setting::{ cc = 82, long = "Sustain", mod = Some 50, name = "s" }
+            , Setting::{ cc = 83, long = "Release", mod = Some 51, name = "r" }
             ]
           : List Setting.Type
       }
@@ -85,27 +222,27 @@ in  [ { name = "lfo.lfo-2"
       , content =
             [ Setting::{
               , bounds = { lower = 0, upper = 3 }
-              , cc = 35
+              , cc = 22
               , labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ]
               , long = "Type"
               , name = "type"
               }
             , Setting::{
               , bounds = { lower = 0, upper = 1 }
-              , cc = 36
+              , cc = 23
               , labels = Some [ "FREE", "KEY SYNC" ]
               , long = "Sync"
               , name = "sync"
               }
-            , Setting::{ cc = 31, long = "Rate", mod = Some 77, name = "rate" }
-            , Setting::{ cc = 32, long = "Wave", mod = Some 78, name = "wave" }
+            , Setting::{ cc = 18, long = "Rate", mod = Some 56, name = "rate" }
+            , Setting::{ cc = 19, long = "Wave", mod = Some 57, name = "wave" }
             , Setting::{
-              , cc = 33
+              , cc = 20
               , long = "Delay"
-              , mod = Some 79
+              , mod = Some 58
               , name = "delay"
               }
-            , Setting::{ cc = 34, long = "Fade", mod = Some 80, name = "fade" }
+            , Setting::{ cc = 21, long = "Fade", mod = Some 59, name = "fade" }
             ]
           : List Setting.Type
       }
@@ -122,25 +259,33 @@ in  [ { name = "lfo.lfo-2"
           ''
       , content = [] : List Setting.Type
       }
-    , { name = "envelope.filter"
-      , long = "Pitch Envelope"
+    , { name = "lfo.lfo-2"
+      , long = "LFO 2"
       , description = None Text
       , content =
-            [ Setting::{ cc = 20, long = "Attack", mod = Some 69, name = "a" }
-            , Setting::{ cc = 21, long = "Decay", mod = Some 70, name = "d" }
-            , Setting::{ cc = 22, long = "Sustain", mod = Some 71, name = "s" }
-            , Setting::{ cc = 23, long = "Release", mod = Some 72, name = "r" }
-            ]
-          : List Setting.Type
-      }
-    , { name = "envelope.amplitude"
-      , long = "Amplitude Envelope"
-      , description = None Text
-      , content =
-            [ Setting::{ cc = 24, long = "Attack", mod = Some 73, name = "a" }
-            , Setting::{ cc = 25, long = "Decay", mod = Some 74, name = "d" }
-            , Setting::{ cc = 26, long = "Sustain", mod = Some 75, name = "s" }
-            , Setting::{ cc = 27, long = "Release", mod = Some 76, name = "r" }
+            [ Setting::{
+              , bounds = { lower = 0, upper = 3 }
+              , cc = 28
+              , labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ]
+              , long = "Type"
+              , name = "type"
+              }
+            , Setting::{
+              , bounds = { lower = 0, upper = 1 }
+              , cc = 29
+              , labels = Some [ "FREE", "KEY SYNC" ]
+              , long = "Sync"
+              , name = "sync"
+              }
+            , Setting::{ cc = 24, long = "Rate", mod = Some 60, name = "rate" }
+            , Setting::{ cc = 25, long = "Wave", mod = Some 61, name = "wave" }
+            , Setting::{
+              , cc = 26
+              , long = "Delay"
+              , mod = Some 62
+              , name = "delay"
+              }
+            , Setting::{ cc = 27, long = "Fade", mod = Some 63, name = "fade" }
             ]
           : List Setting.Type
       }
@@ -149,14 +294,14 @@ in  [ { name = "lfo.lfo-2"
       , description = None Text
       , content =
             [ Setting::{
-              , cc = 3
+              , cc = 81
               , description = Some
                   ''
                   Sets the cutoff frequency of the hipass filter. Hipass is piped after
                   lopass, creating a bandpass.
                   ''
               , long = "Hipass Cutoff"
-              , mod = Some 65
+              , mod = Some 45
               , name = "hpf"
               , tics = Some
                 [ { label = "33 hZ", value = 0 }
@@ -165,13 +310,13 @@ in  [ { name = "lfo.lfo-2"
                 ]
               }
             , Setting::{
-              , cc = 4
+              , cc = 74
               , description = Some
                   ''
                   Sets the cutoff frequency of the lopass filter.
                   ''
               , long = "Lopass Cutoff"
-              , mod = Some 61
+              , mod = Some 42
               , name = "cut"
               , tics = Some
                 [ { label = "33 hZ", value = 0 }
@@ -180,18 +325,18 @@ in  [ { name = "lfo.lfo-2"
                 ]
               }
             , Setting::{
-              , cc = 8
+              , cc = 71
               , description = Some
                   ''
                   Sets the amount of filter resonance, i.e. how much upper frequencies are
                   amplified.
                   ''
               , long = "Resonance"
-              , mod = Some 62
+              , mod = Some 43
               , name = "res"
               }
             , Setting::{
-              , cc = 6
+              , cc = 4
               , description = Some
                   ''
                   Sets how much the filter cutoff tracks the frequency of the main
@@ -203,42 +348,28 @@ in  [ { name = "lfo.lfo-2"
                   music!
                   ''
               , long = "Tracking"
-              , mod = Some 66
+              , mod = Some 46
               , name = "track"
               }
             , Setting::{
-              , cc = 9
+              , cc = 3
               , description = Some
                   ''
                   Sets how much the filter envelope modulates the filter cutoff.
                   ''
               , long = "Envelope generator"
-              , mod = Some 63
+              , mod = Some 44
               , name = "eg"
               }
             , Setting::{
-              , cc = 10
+              , cc = 8
               , description = Some
                   ''
                   Sets how much LFO 1 modulates the filter frequency cutoff.
                   ''
               , long = "Low frequency oscillator"
-              , mod = Some 67
+              , mod = Some 47
               , name = "lfo"
-              }
-            ]
-          : List Setting.Type
-      }
-    , { name = "modulators"
-      , long = "Modulators"
-      , description = None Text
-      , content =
-            [ Setting::{
-              , bounds = { lower = 0, upper = 3 }
-              , cc = 50
-              , labels = Some [ "LFO 2", "Mod Wheel", "Velocity", "Aftertouch" ]
-              , long = "Selector"
-              , name = "selector"
               }
             ]
           : List Setting.Type
@@ -251,14 +382,14 @@ in  [ { name = "lfo.lfo-2"
               , cc = 7
               , description = Some
                   ''
-                  Undocumented.
+                  Amplification, set to default 127.
                   ''
               , long = "Amp level"
               , name = "amp"
               }
             , Setting::{
               , bounds = { lower = 0, upper = 5 }
-              , cc = 30
+              , cc = 17
               , labels = Some [ "POLY", "UNI A", "UNI B", "TRI", "DUO", "MONO" ]
               , long = "Play mode"
               , name = "mode"
@@ -268,127 +399,6 @@ in  [ { name = "lfo.lfo-2"
               , cc = 68
               , long = "Legato"
               , name = "legato"
-              }
-            ]
-          : List Setting.Type
-      }
-    , { name = "oscillator"
-      , long = "Oscillator Control"
-      , description = None Text
-      , content =
-            [ Setting::{
-              , cc = 12
-              , description = Some
-                  ''
-                  Controls the shape of the generated wave, going from sawtooth through
-                  square, to triangle waves.
-                  ''
-              , long = "Wave form"
-              , mod = Some 51
-              , name = "wave"
-              , tics = Some
-                [ { label = "⩘", value = 0 }
-                , { label = "⎍", value = 63 }
-                , { label = "⋀", value = 127 }
-                ]
-              }
-            , Setting::{
-              , cc = 11
-              , description = Some
-                  ''
-                  Control the pulse width of the square wave form. This can be modulated
-                  using LFO 2.
-                  ''
-              , long = "Pulse width"
-              , mod = Some 56
-              , name = "pw"
-              }
-            , Setting::{
-              , cc = 13
-              , description = Some
-                  ''
-                  Sets the amplitude of the wave form.
-                  ''
-              , long = "Level"
-              , mod = Some 52
-              , name = "lvl"
-              }
-            , Setting::{
-              , cc = 14
-              , description = Some
-                  ''
-                  Amplitude of sub-oscillator, which produces a square wave one octave
-                  below the main oscillator.
-                  ''
-              , long = "Sub-oscillator"
-              , mod = Some 53
-              , name = "sub"
-              }
-            , Setting::{
-              , cc = 15
-              , description = Some
-                  ''
-                  Amplitude of white noise, mixed in with main oscillator and
-                  sub-oscillator.
-                  ''
-              , long = "Noise level"
-              , mod = Some 54
-              , name = "noise"
-              }
-            , Setting::{
-              , cc = 5
-              , description = Some
-                  ''
-                  Allow notes to glide (portamento). The behaviour strongly depends on the
-                  playing mode. Optionally, glide will respond to legato playing.
-                  ''
-              , flags = Some [ "misc.legato" ]
-              , long = "Glide"
-              , mod = Some 57
-              , name = "gld"
-              }
-            , Setting::{
-              , cc = 16
-              , description = Some
-                  ''
-                  Control the change in pitch of the main oscillator with the LFO, from
-                  subtle vibrato to extreme whoopy sounds.
-                  ''
-              , long = "Low frequency oscillator"
-              , mod = Some 55
-              , name = "lfo"
-              }
-            , Setting::{
-              , cc = 17
-              , description = Some
-                  ''
-                  Control how much the filter envelope modulates the pitch of the
-                  oscillator. Envelopes are unipolar.
-                  ''
-              , long = "Envelope Generator"
-              , mod = Some 60
-              , name = "ev"
-              }
-            , Setting::{
-              , cc = 18
-              , description = Some
-                  ''
-                  Detune notes when in stacked modes (i.e. multiple oscillators per node:
-                  UNI A, UNI B, TRI, DUO).
-                  ''
-              , long = "Detune"
-              , mod = Some 58
-              , name = "dtn"
-              }
-            , Setting::{
-              , cc = 19
-              , description = Some
-                  ''
-                  Choose from different predefined chords (see Chords tab).
-                  ''
-              , long = "Chord control"
-              , mod = Some 59
-              , name = "chord"
               }
             ]
           : List Setting.Type
