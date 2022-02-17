@@ -33,7 +33,37 @@ let Setting =
         }
       }
 
-in  [ { name = "oscillator"
+in  [ { name = "lfo.lfo-1"
+      , long = "LFO 1"
+      , description = None Text
+      , content =
+            [ Setting::{
+              , bounds = { lower = 0, upper = 3 }
+              , cc = 22
+              , labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ]
+              , long = "Type"
+              , name = "type"
+              }
+            , Setting::{
+              , bounds = { lower = 0, upper = 1 }
+              , cc = 23
+              , labels = Some [ "FREE", "KEY SYNC" ]
+              , long = "Sync"
+              , name = "sync"
+              }
+            , Setting::{ cc = 18, long = "Rate", mod = Some 56, name = "rate" }
+            , Setting::{ cc = 19, long = "Wave", mod = Some 57, name = "wave" }
+            , Setting::{
+              , cc = 20
+              , long = "Delay"
+              , mod = Some 58
+              , name = "delay"
+              }
+            , Setting::{ cc = 21, long = "Fade", mod = Some 59, name = "fade" }
+            ]
+          : List Setting.Type
+      }
+    , { name = "oscillator"
       , long = "Oscillator Control"
       , description = None Text
       , content =
@@ -154,141 +184,6 @@ in  [ { name = "oscillator"
             ]
           : List Setting.Type
       }
-    , { name = "modulators"
-      , long = "Modulators"
-      , description = None Text
-      , content =
-            [ Setting::{
-              , bounds = { lower = 0, upper = 3 }
-              , cc = 30
-              , labels = Some [ "LFO 2", "Mod Wheel", "Velocity", "Aftertouch" ]
-              , long = "Selector"
-              , name = "selector"
-              }
-            ]
-          : List Setting.Type
-      }
-    , { name = "reverb"
-      , long = "Reverb Control"
-      , description = None Text
-      , content =
-            [ Setting::{ cc = 75, long = "Size", mod = Some 65, name = "size" }
-            , Setting::{
-              , cc = 76
-              , long = "Decay"
-              , mod = Some 66
-              , name = "decay"
-              }
-            , Setting::{
-              , cc = 77
-              , long = "Filter"
-              , mod = Some 67
-              , name = "filter"
-              }
-            , Setting::{ cc = 78, long = "Mix", mod = Some 69, name = "mix" }
-            ]
-          : List Setting.Type
-      }
-    , { name = "envelope.amplitude"
-      , long = "Amplitude Envelope"
-      , description = None Text
-      , content =
-            [ Setting::{ cc = 73, long = "Attack", mod = Some 52, name = "a" }
-            , Setting::{ cc = 84, long = "Decay", mod = Some 53, name = "d" }
-            , Setting::{ cc = 85, long = "Sustain", mod = Some 54, name = "s" }
-            , Setting::{ cc = 72, long = "Release", mod = Some 55, name = "r" }
-            ]
-          : List Setting.Type
-      }
-    , { name = "envelope.filter"
-      , long = "Filter Envelope"
-      , description = None Text
-      , content =
-            [ Setting::{ cc = 79, long = "Attack", mod = Some 48, name = "a" }
-            , Setting::{ cc = 80, long = "Decay", mod = Some 49, name = "d" }
-            , Setting::{ cc = 82, long = "Sustain", mod = Some 50, name = "s" }
-            , Setting::{ cc = 83, long = "Release", mod = Some 51, name = "r" }
-            ]
-          : List Setting.Type
-      }
-    , { name = "lfo"
-      , long = "LFO Control"
-      , description = None Text
-      , content = [] : List Setting.Type
-      }
-    , { name = "lfo.lfo-1"
-      , long = "LFO 1"
-      , description = None Text
-      , content =
-            [ Setting::{
-              , bounds = { lower = 0, upper = 3 }
-              , cc = 22
-              , labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ]
-              , long = "Type"
-              , name = "type"
-              }
-            , Setting::{
-              , bounds = { lower = 0, upper = 1 }
-              , cc = 23
-              , labels = Some [ "FREE", "KEY SYNC" ]
-              , long = "Sync"
-              , name = "sync"
-              }
-            , Setting::{ cc = 18, long = "Rate", mod = Some 56, name = "rate" }
-            , Setting::{ cc = 19, long = "Wave", mod = Some 57, name = "wave" }
-            , Setting::{
-              , cc = 20
-              , long = "Delay"
-              , mod = Some 58
-              , name = "delay"
-              }
-            , Setting::{ cc = 21, long = "Fade", mod = Some 59, name = "fade" }
-            ]
-          : List Setting.Type
-      }
-    , { name = "envelope"
-      , long = "Envelope"
-      , description = Some
-          ''
-          The envelopes follow classic Attack/Decay/Sustain/Release pattern.
-
-          -   Attack: time taken to reach maximum amplitude
-          -   Decay: time taken to reach sustain level
-          -   Sustain: relative amplitude of sustain level
-          -   Release: time taken after release to reach 0 amp.
-          ''
-      , content = [] : List Setting.Type
-      }
-    , { name = "lfo.lfo-2"
-      , long = "LFO 2"
-      , description = None Text
-      , content =
-            [ Setting::{
-              , bounds = { lower = 0, upper = 3 }
-              , cc = 28
-              , labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ]
-              , long = "Type"
-              , name = "type"
-              }
-            , Setting::{
-              , bounds = { lower = 0, upper = 1 }
-              , cc = 29
-              , labels = Some [ "FREE", "KEY SYNC" ]
-              , long = "Sync"
-              , name = "sync"
-              }
-            , Setting::{ cc = 24, long = "Rate", mod = Some 60, name = "rate" }
-            , Setting::{ cc = 25, long = "Wave", mod = Some 61, name = "wave" }
-            , Setting::{
-              , cc = 26
-              , long = "Delay"
-              , mod = Some 62
-              , name = "delay"
-              }
-            , Setting::{ cc = 27, long = "Fade", mod = Some 63, name = "fade" }
-            ]
-          : List Setting.Type
-      }
     , { name = "filter"
       , long = "Filter control"
       , description = None Text
@@ -374,6 +269,25 @@ in  [ { name = "oscillator"
             ]
           : List Setting.Type
       }
+    , { name = "lfo"
+      , long = "LFO Control"
+      , description = None Text
+      , content = [] : List Setting.Type
+      }
+    , { name = "modulators"
+      , long = "Modulators"
+      , description = None Text
+      , content =
+            [ Setting::{
+              , bounds = { lower = 0, upper = 3 }
+              , cc = 30
+              , labels = Some [ "LFO 2", "Mod Wheel", "Velocity", "Aftertouch" ]
+              , long = "Selector"
+              , name = "selector"
+              }
+            ]
+          : List Setting.Type
+      }
     , { name = "misc"
       , long = "Misc"
       , description = None Text
@@ -400,6 +314,92 @@ in  [ { name = "oscillator"
               , long = "Legato"
               , name = "legato"
               }
+            ]
+          : List Setting.Type
+      }
+    , { name = "reverb"
+      , long = "Reverb Control"
+      , description = None Text
+      , content =
+            [ Setting::{ cc = 75, long = "Size", mod = Some 86, name = "size" }
+            , Setting::{
+              , cc = 76
+              , long = "Decay"
+              , mod = Some 87
+              , name = "decay"
+              }
+            , Setting::{
+              , cc = 77
+              , long = "Filter"
+              , mod = Some 88
+              , name = "filter"
+              }
+            , Setting::{ cc = 78, long = "Mix", mod = Some 89, name = "mix" }
+            ]
+          : List Setting.Type
+      }
+    , { name = "envelope.filter"
+      , long = "Filter Envelope"
+      , description = None Text
+      , content =
+            [ Setting::{ cc = 79, long = "Attack", mod = Some 48, name = "a" }
+            , Setting::{ cc = 80, long = "Decay", mod = Some 49, name = "d" }
+            , Setting::{ cc = 82, long = "Sustain", mod = Some 50, name = "s" }
+            , Setting::{ cc = 83, long = "Release", mod = Some 51, name = "r" }
+            ]
+          : List Setting.Type
+      }
+    , { name = "lfo.lfo-2"
+      , long = "LFO 2"
+      , description = None Text
+      , content =
+            [ Setting::{
+              , bounds = { lower = 0, upper = 3 }
+              , cc = 28
+              , labels = Some [ "BPM", "LOW", "HIGH", "TRACK" ]
+              , long = "Type"
+              , name = "type"
+              }
+            , Setting::{
+              , bounds = { lower = 0, upper = 1 }
+              , cc = 29
+              , labels = Some [ "FREE", "KEY SYNC" ]
+              , long = "Sync"
+              , name = "sync"
+              }
+            , Setting::{ cc = 24, long = "Rate", mod = Some 60, name = "rate" }
+            , Setting::{ cc = 25, long = "Wave", mod = Some 61, name = "wave" }
+            , Setting::{
+              , cc = 26
+              , long = "Delay"
+              , mod = Some 62
+              , name = "delay"
+              }
+            , Setting::{ cc = 27, long = "Fade", mod = Some 63, name = "fade" }
+            ]
+          : List Setting.Type
+      }
+    , { name = "envelope"
+      , long = "Envelope"
+      , description = Some
+          ''
+          The envelopes follow classic Attack/Decay/Sustain/Release pattern.
+
+          -   Attack: time taken to reach maximum amplitude
+          -   Decay: time taken to reach sustain level
+          -   Sustain: relative amplitude of sustain level
+          -   Release: time taken after release to reach 0 amp.
+          ''
+      , content = [] : List Setting.Type
+      }
+    , { name = "envelope.amplitude"
+      , long = "Amplitude Envelope"
+      , description = None Text
+      , content =
+            [ Setting::{ cc = 73, long = "Attack", mod = Some 52, name = "a" }
+            , Setting::{ cc = 84, long = "Decay", mod = Some 53, name = "d" }
+            , Setting::{ cc = 85, long = "Sustain", mod = Some 54, name = "s" }
+            , Setting::{ cc = 72, long = "Release", mod = Some 55, name = "r" }
             ]
           : List Setting.Type
       }

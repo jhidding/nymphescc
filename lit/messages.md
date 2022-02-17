@@ -145,10 +145,10 @@ The envelopes follow classic Attack/Decay/Sustain/Release pattern.
 #### Fade {.setting name=fade cc=27 mod=63}
 
 ## Reverb Control {.group name=reverb}
-### Size {.setting name=size cc=75 mod=65}
-### Decay {.setting name=decay cc=76 mod=66}
-### Filter {.setting name=filter cc=77 mod=67}
-### Mix {.setting name=mix cc=78 mod=69}
+### Size {.setting name=size cc=75 mod=86}
+### Decay {.setting name=decay cc=76 mod=87}
+### Filter {.setting name=filter cc=77 mod=88}
+### Mix {.setting name=mix cc=78 mod=89}
 
 ## Modulators {.group name=modulators}
 ### Selector {.setting name=selector cc=30}
