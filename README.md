@@ -24,13 +24,40 @@ There is a rudimentary implementation of a session manager that allows you to st
 - Gtk 4
 - A [Dreadbox Nymphes](https://www.dreadbox-fx.com/nymphes/) attached.
 
-## Install
+## Install NymphesCC
 Clone this repository and run `pip install --user .`, or use `poetry install` to install inside virtual env. This should install the `nymphescc` executable in your path.
+
+## Updating Firmware
+It may take some searching online to figure out how to update firmware from Linux. You probably have all the right tools already installed (on Fedora the package is called `alsa-utils`)! First, disconnect the Nymphes, press the `menu` and `load` buttons simultaniously while plugging the Nymphes back in: the `shift` `load` and `menu` buttons should light up in sequence. Figure out on what port the Nymphes is available on your PC:
+
+```shell
+amidi -l
+```
+
+In my case, I get to see the Nymphes, my Arturia keyboard and my Behringer USB soundcard:
+
+```
+Dir Device    Name
+IO  hw:0,0,0  Nymphes MIDI 1
+IO  hw:4,0,0  Arturia KeyStep 32 MIDI 1
+IO  hw:5,0,0  UMC204HD 192k MIDI 1
+```
+
+Then send the firmware to the Nymphes, either to port `hw:0,0,0` (in this case), or use the alias `hw:Nymphes`:
+
+```shell
+amidi -p hw:Nymphes -s nymphes_v2.syx
+```
+
+After the firmware is loaded, Nymphes will start auto-tuning and you're ready to go.
+
 
 ## TODO
 
 - [x] Firmware 2.0 support (1.0 no longer works)
+- [x] Auto-connect to Nymphes 
 - [ ] Decode Sysex messages
+- [ ] Add MIDI-through support
 - [ ] Export patches to MIDI files (you can do this using sqlite, but that is not so nice from a UI point of view).
 - [ ] Use Base2048 to share patches through Twitter.
 - [ ] Add button to explicitely sync setting with device.
@@ -38,6 +65,9 @@ Clone this repository and run `pip install --user .`, or use `poetry install` to
 - [ ] Add name metadata to snapshots.
 - [ ] Add delete button to snapshots.
 - [ ] Implement search bar
+
+## Contributing
+If you'd like to contribute to this project, please checkout the contribution guide lines in `CONTRIBUTING.md`.
 
 ## License
 >   Copyright 2022 Johan Hidding
